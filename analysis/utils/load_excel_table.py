@@ -7,7 +7,7 @@ def load_table(path):
 
 
 
-df = load_table("../data/AEILI/POWERS/Asymmetries Alpha band.xls")
+df = load_table("../../data/AEILI/POWERS/Asymmetries Alpha band.xls")
 print("Done")
 
 
