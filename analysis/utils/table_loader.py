@@ -1,6 +1,13 @@
 import pandas as pd
 import os
 
+from analysis.model.neuromarkers.raw.alpha_asymmetries import AlphaAsymmetries
+from analysis.model.neuromarkers.raw.alpha_parietal import AlphaParietal
+from analysis.model.neuromarkers.raw.beta_fz import BetaFz
+from analysis.model.neuromarkers.raw.channels_db import ChannelsDb
+from analysis.model.neuromarkers.raw.channels_z import ChannelsZ
+from analysis.model.neuromarkers.raw.channels_z_common_baseline import ChannelsZCommonBaseline
+from analysis.model.neuromarkers.raw.theta_fz import ThetaFz
 from analysis.model.participant import Participant
 
 ALPHA_ASYMMETRIES = 'Asymmetries Alpha band'
@@ -18,18 +25,17 @@ class TableLoader:
         self.set_data_path(data_path)
         self.participant_names = self.load_participant_names()
         self.participants = []
-        self.data_path = ""
 
     @staticmethod
-    def load_table(table_path, table_name, extension='.xls'):
+    def load_table(data_path, table_path, table_name, extension='.xls', sheet_names=None, usecols=None, skiprows=None):
         df = []
-        file_path = table_path + table_name + extension
+        file_path = data_path + table_path + table_name + extension
         try:
             if extension == '.xls':
-                df = pd.read_excel(file_path, sheet_name=None, engine='xlrd')
+                df = pd.read_excel(file_path, sheet_name=None, engine='xlrd', usecols=usecols, skiprows=skiprows)
                 print("Successfully loaded! ", df)
             elif extension == '.xlsx':
-                df = pd.read_excel(file_path, sheet_name=None, engine='openpyxl')
+                df = pd.read_excel(file_path, sheet_name=None, engine='openpyxl', usecols=usecols, skiprows=skiprows)
                 print("Successfully loaded! ", df)
             else:
                 raise Exception("Format not supported! ", extension)
@@ -39,6 +45,7 @@ class TableLoader:
 
     def load_all_tables(self, table_path):
         for name in self.participant_names:
+            table_path = name + table_path
             alpha_parietal = self.load_alpha_parietal_table(table_path)
             alpha_asymmetries = self.load_alpha_asymmetries_table(table_path)
             beta_fz = self.load_beta_fz_table(table_path)
@@ -58,25 +65,32 @@ class TableLoader:
             print("Successfully loaded participant " + name + "!")
 
     def load_alpha_asymmetries_table(self, table_path):
-        return self.load_table(table_path, ALPHA_ASYMMETRIES)
+        dataframe = self.load_table(self.data_path, table_path, ALPHA_ASYMMETRIES)
+        return AlphaAsymmetries(dataframe)
 
     def load_alpha_parietal_table(self, table_path):
-        return self.load_table(table_path, ALPHA_PARIETAL)
+        dataframe = self.load_table(self.data_path, table_path, ALPHA_PARIETAL)
+        return AlphaParietal(dataframe)
 
     def load_beta_fz_table(self, table_path):
-        return self.load_table(table_path, BETA_FZ)
+        dataframe = self.load_table(self.data_path, table_path, BETA_FZ)
+        return BetaFz(dataframe)
 
     def load_channels_db_table(self, table_path):
-        return self.load_table(table_path, CHANNELS_DB)
+        dataframe = self.load_table(self.data_path, table_path, CHANNELS_DB)
+        return ChannelsDb(dataframe)
 
     def load_channels_z_table(self, table_path):
-        return self.load_table(table_path, CHANNELS_Z)
+        dataframe = self.load_table(self.data_path, table_path, CHANNELS_Z)
+        return ChannelsZ(dataframe)
 
     def load_channels_z_common_baseline_table(self, table_path):
-        return self.load_table(table_path, CHANNELS_Z_COMMON_BASELINE)
+        dataframe = self.load_table(self.data_path, table_path, CHANNELS_Z_COMMON_BASELINE)
+        return ChannelsZCommonBaseline(dataframe)
 
     def load_theta_fz_table(self, table_path):
-        return self.load_table(table_path, THETA_FZ)
+        dataframe = self.load_table(self.data_path, table_path, THETA_FZ)
+        return ThetaFz(dataframe)
 
     def load_participant_names(self):
         dirs = next(os.walk(self.data_path))[1]
