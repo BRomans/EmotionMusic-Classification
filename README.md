@@ -1,2 +1,2 @@
-# EMAnalysis-Python
-First implementation of the automaded analysis pipeline for the Emotion-Music project in Python.
+# EmotionMusic - Classification
+Implementation of the data processing pipeline for the EmotionMusic project.
