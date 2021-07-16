@@ -1,5 +1,7 @@
 ../toolboxes/SignalProcessing.Toolbox
 ../toolboxes/pymensia2
 ../toolboxes/python-mensia-sigpro2
+mne
 numpy
 pandas
+matplotlib
