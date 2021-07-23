@@ -126,7 +126,7 @@ def add_em_events_melo_raw(file, events):
 
     # We save the changes
     with open(file, 'w', encoding='utf-8') as f:
-        json.dump(raw_json, f, indent=4) # WARNING: indent makes it pretty but consumes way more space on disk!!
+        json.dump(raw_json, f)  # WARNING: indent makes it pretty but consumes way more space on disk!!
         print("Successfully saved events into ", file)
     raw_file.close()
 
