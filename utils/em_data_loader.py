@@ -30,34 +30,26 @@ event_codes = {
 
 }
 
-dictionary_utf8 = [
-    ["a", "01100001"],
-    ["b", "01100010"],
-    ["c", "01100011"],
-    ["d", "01100100"],
-    ["e", "01100101"],
-    ["f", "01100110"],
-    ["g", "01100111"],
-    ["h", "01101000"],
-    ["n", "01101110"],
-    ["o", "01101111"],
-    ["s", "01110011"],
-    ["z", "01111010"]
-]
-
-trigger_codes_decoder = {
-    's': 'start_experiment',
-    'o': 'resting_state_eo',
-    'z': 'resting_state_ec',
-    'n': 'white_noise',
-    'a': 'trial_a_1',
-    'b': 'trial_b_1',
-    'c': 'trial_a_2',
-    'd': 'trial_b_2',
-    'e': 'trial_a_3',
-    'f': 'trial_b_3',
-    'g': 'trial_a_4',
-    'h': 'trial_b_4'
+event_labels = {
+    1: 'resting_EO',
+    2: 'resting_EC',
+    3: "white_noise",
+    111: 'EO/class_1_A',
+    112: 'EO/class_1_B',
+    121: 'EO/class_2_A',
+    122: 'EO/class_2_B',
+    131: 'EO/class_3_A',
+    132: 'EO/class_3_B',
+    141: 'EO/class_4_A',
+    142: 'EO/class_4_B',
+    211: 'EC/class_1_A',
+    212: 'EC/class_1_B',
+    221: 'EC/class_2_A',
+    222: 'EC/class_2_B',
+    231: 'EC/class_3_A',
+    232: 'EC/class_3_B',
+    241: 'EC/class_4_A',
+    242: 'EC/class_4_B'
 }
 
 
@@ -199,3 +191,288 @@ def generate_participants_events(group_path, group_folders, group):
         # participant['p1_timestamp'] = p1_timestamp
         # participant['p2_timestamp'] = p2_timestamp
         # participants[participant_id] = participant
+
+
+def split_dataset_p1(data_p1, metadata, events, events_id, samp_rate=250):
+    sr = samp_rate  # Sampling Rate
+    data = {}
+    trial = 1
+
+    # Cut the Resting State EO
+    enter_rest_state_eo = [[], []]
+    idx = events[0]
+    enter_rest_state_eo[0] = data_p1['recording']['channelData'][0][idx: idx + (120 * sr)]
+    enter_rest_state_eo[1] = data_p1['recording']['channelData'][1][idx: idx + (120 * sr)]
+    data[event_labels[events_id[0]]] = {}
+    data[event_labels[events_id[0]]]['data'] = enter_rest_state_eo
+
+    # Cut the Resting State EC
+    enter_rest_state_ec = [[], []]
+    idx = events[1]
+    enter_rest_state_ec[0] = data_p1['recording']['channelData'][0][idx: idx + (120 * sr)]
+    enter_rest_state_ec[1] = data_p1['recording']['channelData'][1][idx: idx + (120 * sr)]
+    data[event_labels[events_id[1]]] = {}
+    data[event_labels[events_id[1]]]['data'] = enter_rest_state_ec
+
+    # Cut the Trial 1 white noises and stimuli
+    wn_t1_a = [[], []]
+    idx = events[2]
+    wn_t1_a[0] = data_p1['recording']['channelData'][0][idx + (15 * sr): idx + (30 * sr)]  # the first trial has 15 extra seconds of WN that we do not need
+    wn_t1_a[1] = data_p1['recording']['channelData'][1][idx + (15 * sr): idx + (30 * sr)]
+    data[event_labels[events_id[2]] + '_' + str(trial) + 'a'] = {}
+    data[event_labels[events_id[2]] + '_' + str(trial) + 'a']['data'] = wn_t1_a
+
+    t1_a = [[], []]
+    idx = events[3]
+    t1_a[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t1_a[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[3]]] = {}
+    data[event_labels[events_id[3]]]['data'] = t1_a
+
+    wn_t1_b = [[], []]
+    idx = events[4]
+    wn_t1_b[0] = data_p1['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t1_b[1] = data_p1['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[4]] + '_' + str(trial) + 'b'] = {}
+    data[event_labels[events_id[4]] + '_' + str(trial) + 'b']['data'] = wn_t1_b
+    trial += 1
+
+    t1_b = [[], []]
+    idx = events[5]
+    t1_b[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t1_b[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[5]]] = {}
+    data[event_labels[events_id[5]]]['data'] = t1_b
+
+    # Cut the Trial 2 white noises and stimuli
+    wn_t2_a = [[], []]
+    idx = events[6]
+    wn_t2_a[0] = data_p1['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t2_a[1] = data_p1['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[6]] + '_' + str(trial) + 'a'] = {}
+    data[event_labels[events_id[6]] + '_' + str(trial) + 'a']['data'] = wn_t2_a
+
+    t2_a = [[], []]
+    idx = events[7]
+    t2_a[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t2_a[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[7]]] = {}
+    data[event_labels[events_id[7]]]['data'] = t2_a
+
+    wn_t2_b = [[], []]
+    idx = events[8]
+    wn_t2_b[0] = data_p1['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t2_b[1] = data_p1['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[8]] + '_' + str(trial) + 'b'] = {}
+    data[event_labels[events_id[8]] + '_' + str(trial) + 'b']['data'] = wn_t2_b
+    trial += 1
+
+    t2_b = [[], []]
+    idx = events[9]
+    t2_b[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t2_b[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[9]]] = {}
+    data[event_labels[events_id[9]]]['data'] = t2_b
+
+    # Cut the Trial 3 white noises and stimuli
+    wn_t3_a = [[], []]
+    idx = events[10]
+    wn_t3_a[0] = data_p1['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t3_a[1] = data_p1['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[10]] + '_' + str(trial) + 'a'] = {}
+    data[event_labels[events_id[10]] + '_' + str(trial) + 'a']['data'] = wn_t3_a
+
+    t3_a = [[], []]
+    idx = events[11]
+    t3_a[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t3_a[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[11]]] = {}
+    data[event_labels[events_id[11]]]['data'] = t3_a
+
+    wn_t3_b = [[], []]
+    idx = events[12]
+    wn_t3_b[0] = data_p1['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t3_b[1] = data_p1['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[12]] + '_' + str(trial) + 'b'] = {}
+    data[event_labels[events_id[12]] + '_' + str(trial) + 'b']['data'] = wn_t3_b
+    trial += 1
+
+    t3_b = [[], []]
+    idx = events[13]
+    t3_b[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t3_b[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[13]]] = {}
+    data[event_labels[events_id[13]]]['data'] = t3_b
+
+    # Cut the Trial 4 white noises and stimuli
+    wn_t4_a = [[], []]
+    idx = events[14]
+    wn_t4_a[0] = data_p1['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t4_a[1] = data_p1['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[14]] + '_' + str(trial) + 'a'] = {}
+    data[event_labels[events_id[14]] + '_' + str(trial) + 'a']['data'] = wn_t4_a
+
+    t4_a = [[], []]
+    idx = events[15]
+    t4_a[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t4_a[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[15]]] = {}
+    data[event_labels[events_id[15]]]['data'] = t4_a
+
+    wn_t4_b = [[], []]
+    idx = events[16]
+    wn_t4_b[0] = data_p1['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t4_b[1] = data_p1['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[16]] + '_' + str(trial) + 'b'] = {}
+    data[event_labels[events_id[16]] + '_' + str(trial) + 'b']['data'] = wn_t4_b
+
+    t4_b = [[], []]
+    idx = events[17]
+    t4_b[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t4_b[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[17]]] = {}
+    data[event_labels[events_id[17]]]['data'] = t4_b
+
+    return data
+
+def split_dataset_p2(data_p2, metadata, events, events_id, samp_rate=250):
+    sr = samp_rate  # Sampling Rate
+    data = {}
+    trial = 1
+
+    # Cut the Trial 1 white noises and stimuli
+    wn_t1_a = [[], []]
+    idx = events[0]
+    wn_t1_a[0] = data_p2['recording']['channelData'][0][idx + (15 * sr): idx + (30 * sr)]  # the first trial has 15 extra seconds of WN that we do not need
+    wn_t1_a[1] = data_p2['recording']['channelData'][1][idx + (15 * sr): idx + (30 * sr)]
+    data[event_labels[events_id[0]] + '_' + str(trial) + 'a'] = {}
+    data[event_labels[events_id[0]] + '_' + str(trial) + 'a']['data'] = wn_t1_a
+
+    t1_a = [[], []]
+    idx = events[1]
+    t1_a[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t1_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[1]]] = {}
+    data[event_labels[events_id[1]]]['data'] = t1_a
+
+    wn_t1_b = [[], []]
+    idx = events[2]
+    wn_t1_b[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t1_b[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[2]] + '_' + str(trial) + 'b'] = {}
+    data[event_labels[events_id[2]] + '_' + str(trial) + 'b']['data'] = wn_t1_b
+    trial += 1
+
+    t1_b = [[], []]
+    idx = events[3]
+    t1_b[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t1_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[3]]] = {}
+    data[event_labels[events_id[3]]]['data'] = t1_b
+
+    # Cut the Trial 2 white noises and stimuli
+    wn_t2_a = [[], []]
+    idx = events[4]
+    wn_t2_a[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t2_a[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[4]] + '_' + str(trial) + 'a'] = {}
+    data[event_labels[events_id[4]] + '_' + str(trial) + 'a']['data'] = wn_t2_a
+
+    t2_a = [[], []]
+    idx = events[5]
+    t2_a[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t2_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[5]]] = {}
+    data[event_labels[events_id[5]]]['data'] = t2_a
+
+    wn_t2_b = [[], []]
+    idx = events[6]
+    wn_t2_b[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t2_b[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[6]] + '_' + str(trial) + 'b'] = {}
+    data[event_labels[events_id[6]] + '_' + str(trial) + 'b']['data'] = wn_t2_b
+    trial += 1
+
+    t2_b = [[], []]
+    idx = events[7]
+    t2_b[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t2_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[7]]] = {}
+    data[event_labels[events_id[7]]]['data'] = t2_b
+
+    # Cut the Trial 3 white noises and stimuli
+    wn_t3_a = [[], []]
+    idx = events[8]
+    wn_t3_a[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t3_a[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[8]] + '_' + str(trial) + 'a'] = {}
+    data[event_labels[events_id[8]] + '_' + str(trial) + 'a']['data'] = wn_t3_a
+
+    t3_a = [[], []]
+    idx = events[9]
+    t3_a[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t3_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[9]]] = {}
+    data[event_labels[events_id[9]]]['data'] = t3_a
+
+    wn_t3_b = [[], []]
+    idx = events[10]
+    wn_t3_b[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t3_b[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[10]] + '_' + str(trial) + 'b'] = {}
+    data[event_labels[events_id[10]] + '_' + str(trial) + 'b']['data'] = wn_t3_b
+    trial += 1
+
+    t3_b = [[], []]
+    idx = events[11]
+    t3_b[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t3_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[11]]] = {}
+    data[event_labels[events_id[11]]]['data'] = t3_b
+
+    # Cut the Trial 4 white noises and stimuli
+    wn_t4_a = [[], []]
+    idx = events[12]
+    wn_t4_a[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t4_a[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[12]] + '_' + str(trial) + 'a'] = {}
+    data[event_labels[events_id[12]] + '_' + str(trial) + 'a']['data'] = wn_t4_a
+
+    t4_a = [[], []]
+    idx = events[13]
+    t4_a[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t4_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[13]]] = {}
+    data[event_labels[events_id[13]]]['data'] = t4_a
+
+    wn_t4_b = [[], []]
+    idx = events[14]
+    wn_t4_b[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t4_b[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[14]] + '_' + str(trial) + 'b'] = {}
+    data[event_labels[events_id[14]] + '_' + str(trial) + 'b']['data'] = wn_t4_b
+
+    t4_b = [[], []]
+    idx = events[15]
+    t4_b[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t4_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[15]]] = {}
+    data[event_labels[events_id[15]]]['data'] = t4_b
+
+    # Cut the Resting State EO
+    exit_rest_state_eo = [[], []]
+    idx = events[16]
+    exit_rest_state_eo[0] = data_p2['recording']['channelData'][0][idx: idx + (120 * sr)]
+    exit_rest_state_eo[1] = data_p2['recording']['channelData'][1][idx: idx + (120 * sr)]
+    data[event_labels[events_id[16]]] = {}
+    data[event_labels[events_id[16]]]['data'] = exit_rest_state_eo
+
+    # Cut the Resting State EC
+    exit_rest_state_ec = [[], []]
+    idx = events[17]
+    exit_rest_state_ec[0] = data_p2['recording']['channelData'][0][idx: idx + (120 * sr)]
+    exit_rest_state_ec[1] = data_p2['recording']['channelData'][1][idx: idx + (120 * sr)]
+    data[event_labels[events_id[17]]] = {}
+    data[event_labels[events_id[17]]]['data'] = exit_rest_state_ec
+
+    return data
