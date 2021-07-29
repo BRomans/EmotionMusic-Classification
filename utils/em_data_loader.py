@@ -251,7 +251,7 @@ def generate_participants_datasets(group_path, group_folders, group):
 
         out_file = open(group_path + '/' + participant_id + '/' + participant_id + "_prepared.json", "w")
 
-        json.dump(data_cut, out_file, indent=4)
+        json.dump(data_cut, out_file)
 
         out_file.close()
         print(participant_id +
