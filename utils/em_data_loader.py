@@ -6,6 +6,12 @@ import pandas
 eeg_folder = 'eeg_raw'
 metadata_folder = 'metadata'
 physio_folder = 'physio_raw'
+device = {
+    "acquisitionLocation": ['F4', 'F3'],
+    "referencesLocation": ['M2'],
+    "groundsLocation": ['M1']
+
+}
 
 event_codes = {
     'resting_EO': 1,
@@ -227,18 +233,25 @@ def generate_participants_datasets(group_path, group_folders, group):
 
         events = [e[0] for e in events_p2]
         events_id = [e[2] for e in events_p2]
-        data_cut_p2 = split_dataset_p1(data_p2, group, annotations, events, events_id, samp_rate=250)
+        data_cut_p2 = split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=250)
 
         print(participant_id, "...split data part 2!")
 
-        data_cut = data_cut_p1
+        data_cut = {
+            'participant': participant_id,
+            'group': group,
+            'acquisitionLocation': device['acquisitionLocation'],
+            'referencesLocation': device['referencesLocation'],
+            'groundsLocation': device['groundsLocation']
+        }
+        data_cut.update(data_cut_p1)
         data_cut.update(data_cut_p2)
         data_cut['events_p1'] = events_p1
         data_cut['events_p2'] = events_p2
 
         out_file = open(group_path + '/' + participant_id + '/' + participant_id + "_prepared.json", "w")
 
-        json.dump(data_cut, out_file)
+        json.dump(data_cut, out_file, indent=4)
 
         out_file.close()
         print(participant_id +
@@ -256,9 +269,10 @@ def generate_participants_datasets(group_path, group_folders, group):
         # participant['p2_timestamp'] = p2_timestamp
         # participants[participant_id] = participant
 
-
-
 def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=250):
+    eoec = group == '1EOEC'
+    eceo = group == '2ECEO'
+
     sr = samp_rate  # Sampling Rate
     data = {}
     trial = 1
@@ -268,16 +282,16 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     idx = events[0]
     enter_rest_state_eo[0] = data_p1['recording']['channelData'][0][idx: idx + (120 * sr)]
     enter_rest_state_eo[1] = data_p1['recording']['channelData'][1][idx: idx + (120 * sr)]
-    data[event_labels[events_id[0]]] = {}
-    data[event_labels[events_id[0]]]['eeg'] = enter_rest_state_eo
+    data['enter/' + event_labels[events_id[0]]] = {}
+    data['enter/' + event_labels[events_id[0]]]['eeg'] = enter_rest_state_eo
 
     # Cut the Resting State EC
     enter_rest_state_ec = [[], []]
     idx = events[1]
     enter_rest_state_ec[0] = data_p1['recording']['channelData'][0][idx: idx + (120 * sr)]
     enter_rest_state_ec[1] = data_p1['recording']['channelData'][1][idx: idx + (120 * sr)]
-    data[event_labels[events_id[1]]] = {}
-    data[event_labels[events_id[1]]]['eeg'] = enter_rest_state_ec
+    data['enter/' + event_labels[events_id[1]]] = {}
+    data['enter/' + event_labels[events_id[1]]]['eeg'] = enter_rest_state_ec
 
     # Cut the Trial 1 white noises and stimuli
     wn_t1_a = [[], []]
@@ -291,9 +305,10 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     idx = events[3]
     t1_a[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
     t1_a[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[3]]] = {}
+    data[event_labels[events_id[3]]] = {'trial': 'trial_' + str(trial) + 'a'}
     data[event_labels[events_id[3]]]['eeg'] = t1_a
-    data[event_labels[events_id[3]]]['annotations'] = annotations['trial_1a']
+    data[event_labels[events_id[3]]]['annotations'] = annotations['trial_1a'] if eoec \
+        else {"liking": annotations['trial_1a']['liking'], "familiarity": annotations['trial_1a']['familiarity']}
 
 
     wn_t1_b = [[], []]
@@ -302,15 +317,16 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     wn_t1_b[1] = data_p1['recording']['channelData'][1][idx: idx + (15 * sr)]
     data[event_labels[events_id[4]] + '_' + str(trial) + 'b'] = {}
     data[event_labels[events_id[4]] + '_' + str(trial) + 'b']['eeg'] = wn_t1_b
-    trial += 1
 
     t1_b = [[], []]
     idx = events[5]
     t1_b[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
     t1_b[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[5]]] = {}
+    data[event_labels[events_id[5]]] = {'trial': 'trial_' + str(trial) + 'b'}
     data[event_labels[events_id[5]]]['eeg'] = t1_b
-    data[event_labels[events_id[5]]]['annotations'] = annotations['trial_1b']
+    data[event_labels[events_id[5]]]['annotations'] = annotations['trial_1b'] if eceo\
+        else {"liking": annotations['trial_1b']['liking'], "familiarity": annotations['trial_1b']['familiarity']}
+    trial += 1
 
     # Cut the Trial 2 white noises and stimuli
     wn_t2_a = [[], []]
@@ -324,9 +340,10 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     idx = events[7]
     t2_a[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
     t2_a[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[7]]] = {}
+    data[event_labels[events_id[7]]] = {'trial': 'trial_' + str(trial) + 'a'}
     data[event_labels[events_id[7]]]['eeg'] = t2_a
-    data[event_labels[events_id[7]]]['annotations'] = annotations['trial_2a']
+    data[event_labels[events_id[7]]]['annotations'] = annotations['trial_2a'] if eoec \
+        else {"liking": annotations['trial_2a']['liking'], "familiarity": annotations['trial_2a']['familiarity']}
 
 
     wn_t2_b = [[], []]
@@ -335,16 +352,16 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     wn_t2_b[1] = data_p1['recording']['channelData'][1][idx: idx + (15 * sr)]
     data[event_labels[events_id[8]] + '_' + str(trial) + 'b'] = {}
     data[event_labels[events_id[8]] + '_' + str(trial) + 'b']['eeg'] = wn_t2_b
-    trial += 1
 
     t2_b = [[], []]
     idx = events[9]
     t2_b[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
     t2_b[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[9]]] = {}
+    data[event_labels[events_id[9]]] = {'trial': 'trial_' + str(trial) + 'b'}
     data[event_labels[events_id[9]]]['eeg'] = t2_b
-    data[event_labels[events_id[9]]]['annotations'] = annotations['trial_2b']
-
+    data[event_labels[events_id[9]]]['annotations'] = annotations['trial_2b'] if eceo \
+        else {"liking": annotations['trial_2b']['liking'], "familiarity": annotations['trial_2b']['familiarity']}
+    trial += 1
 
     # Cut the Trial 3 white noises and stimuli
     wn_t3_a = [[], []]
@@ -358,9 +375,10 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     idx = events[11]
     t3_a[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
     t3_a[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[11]]] = {}
+    data[event_labels[events_id[11]]] = {'trial': 'trial_' + str(trial) + 'a'}
     data[event_labels[events_id[11]]]['eeg'] = t3_a
-    data[event_labels[events_id[11]]]['annotations'] = annotations['trial_3a']
+    data[event_labels[events_id[11]]]['annotations'] = annotations['trial_3a'] if eoec \
+        else {"liking": annotations['trial_3a']['liking'], "familiarity": annotations['trial_3a']['familiarity']}
 
 
     wn_t3_b = [[], []]
@@ -369,16 +387,16 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     wn_t3_b[1] = data_p1['recording']['channelData'][1][idx: idx + (15 * sr)]
     data[event_labels[events_id[12]] + '_' + str(trial) + 'b'] = {}
     data[event_labels[events_id[12]] + '_' + str(trial) + 'b']['eeg'] = wn_t3_b
-    trial += 1
 
     t3_b = [[], []]
     idx = events[13]
     t3_b[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
     t3_b[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[13]]] = {}
+    data[event_labels[events_id[13]]] = {'trial': 'trial_' + str(trial) + 'b'}
     data[event_labels[events_id[13]]]['eeg'] = t3_b
-    data[event_labels[events_id[13]]]['annotations'] = annotations['trial_3b']
-
+    data[event_labels[events_id[13]]]['annotations'] = annotations['trial_3b'] if eceo \
+        else {"liking": annotations['trial_3b']['liking'], "familiarity": annotations['trial_3b']['familiarity']}
+    trial += 1
 
     # Cut the Trial 4 white noises and stimuli
     wn_t4_a = [[], []]
@@ -392,10 +410,10 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     idx = events[15]
     t4_a[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
     t4_a[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[15]]] = {}
+    data[event_labels[events_id[15]]] = {'trial': 'trial_' + str(trial) + 'a'}
     data[event_labels[events_id[15]]]['eeg'] = t4_a
-    data[event_labels[events_id[15]]]['annotations'] = annotations['trial_4a']
-
+    data[event_labels[events_id[15]]]['annotations'] = annotations['trial_4a'] if eoec \
+        else {"liking": annotations['trial_4a']['liking'], "familiarity": annotations['trial_4a']['familiarity']}
 
     wn_t4_b = [[], []]
     idx = events[16]
@@ -408,168 +426,172 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     idx = events[17]
     t4_b[0] = data_p1['recording']['channelData'][0][idx: idx + (60 * sr)]
     t4_b[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[17]]] = {}
+    data[event_labels[events_id[17]]] = {'trial': 'trial_' + str(trial) + 'b'}
     data[event_labels[events_id[17]]]['eeg'] = t4_b
-    data[event_labels[events_id[5]]]['annotations'] = annotations['trial_4b']
-
+    data[event_labels[events_id[5]]]['annotations'] = annotations['trial_4b'] if eceo \
+        else {"liking": annotations['trial_4b']['liking'], "familiarity": annotations['trial_4b']['familiarity']}
     return data
 
 
 def split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=250):
+    eoec = group == '1EOEC'
+    eceo = group == '2ECEO'
     sr = samp_rate  # Sampling Rate
     data = {}
-    trial = 1
+    trial = 5
 
-    # Cut the Trial 1 white noises and stimuli
-    wn_t1_a = [[], []]
+    # Cut the Trial 5 white noises and stimuli
+    wn_t5_a = [[], []]
     idx = events[0]
-    wn_t1_a[0] = data_p2['recording']['channelData'][0][idx + (15 * sr): idx + (30 * sr)]  # the first trial has 15 extra seconds of WN that we do not need
-    wn_t1_a[1] = data_p2['recording']['channelData'][1][idx + (15 * sr): idx + (30 * sr)]
+    wn_t5_a[0] = data_p2['recording']['channelData'][0][idx + (15 * sr): idx + (30 * sr)]  # the first trial has 15 extra seconds of WN that we do not need
+    wn_t5_a[1] = data_p2['recording']['channelData'][1][idx + (15 * sr): idx + (30 * sr)]
     data[event_labels[events_id[0]] + '_' + str(trial) + 'a'] = {}
-    data[event_labels[events_id[0]] + '_' + str(trial) + 'a']['eeg'] = wn_t1_a
+    data[event_labels[events_id[0]] + '_' + str(trial) + 'a']['eeg'] = wn_t5_a
 
-    t1_a = [[], []]
+    t5_a = [[], []]
     idx = events[1]
-    t1_a[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
-    t1_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[1]]] = {}
-    data[event_labels[events_id[1]]]['eeg'] = t1_a
-    data[event_labels[events_id[1]]]['annotations'] = annotations['trial_1a']
+    t5_a[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t5_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[1]]] = {'trial': 'trial_' + str(trial) + 'a'}
+    data[event_labels[events_id[1]]]['eeg'] = t5_a
+    data[event_labels[events_id[1]]]['annotations'] = annotations['trial_5a'] if eoec \
+        else {"liking": annotations['trial_5a']['liking'], "familiarity": annotations['trial_5a']['familiarity']}
 
-
-    wn_t1_b = [[], []]
+    wn_t5_b = [[], []]
     idx = events[2]
-    wn_t1_b[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
-    wn_t1_b[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
+    wn_t5_b[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t5_b[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
     data[event_labels[events_id[2]] + '_' + str(trial) + 'b'] = {}
-    data[event_labels[events_id[2]] + '_' + str(trial) + 'b']['eeg'] = wn_t1_b
-    trial += 1
+    data[event_labels[events_id[2]] + '_' + str(trial) + 'b']['eeg'] = wn_t5_b
 
-    t1_b = [[], []]
+    t5_b = [[], []]
     idx = events[3]
-    t1_b[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
-    t1_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[3]]] = {}
-    data[event_labels[events_id[3]]]['eeg'] = t1_b
-    data[event_labels[events_id[3]]]['annotations'] = annotations['trial_1b']
+    t5_b[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t5_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[3]]] = {'trial': 'trial_' + str(trial) + 'b'}
+    data[event_labels[events_id[3]]]['eeg'] = t5_b
+    data[event_labels[events_id[3]]]['annotations'] = annotations['trial_5b'] if eceo \
+        else {"liking": annotations['trial_5b']['liking'], "familiarity": annotations['trial_5b']['familiarity']}
+    trial += 1
 
-
-    # Cut the Trial 2 white noises and stimuli
-    wn_t2_a = [[], []]
+    # Cut the Trial 6 white noises and stimuli
+    wn_t6_a = [[], []]
     idx = events[4]
-    wn_t2_a[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
-    wn_t2_a[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
+    wn_t6_a[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t6_a[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
     data[event_labels[events_id[4]] + '_' + str(trial) + 'a'] = {}
-    data[event_labels[events_id[4]] + '_' + str(trial) + 'a']['eeg'] = wn_t2_a
+    data[event_labels[events_id[4]] + '_' + str(trial) + 'a']['eeg'] = wn_t6_a
 
-    t2_a = [[], []]
+    t6_a = [[], []]
     idx = events[5]
-    t2_a[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
-    t2_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[5]]] = {}
-    data[event_labels[events_id[5]]]['eeg'] = t2_a
-    data[event_labels[events_id[5]]]['annotations'] = annotations['trial_2a']
+    t6_a[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t6_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[5]]] = {'trial': 'trial_' + str(trial) + 'a'}
+    data[event_labels[events_id[5]]]['eeg'] = t6_a
+    data[event_labels[events_id[5]]]['annotations'] = annotations['trial_6a'] if eoec \
+        else {"liking": annotations['trial_6a']['liking'], "familiarity": annotations['trial_6a']['familiarity']}
 
-
-    wn_t2_b = [[], []]
+    wn_t6_b = [[], []]
     idx = events[6]
-    wn_t2_b[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
-    wn_t2_b[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
+    wn_t6_b[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t6_b[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
     data[event_labels[events_id[6]] + '_' + str(trial) + 'b'] = {}
-    data[event_labels[events_id[6]] + '_' + str(trial) + 'b']['eeg'] = wn_t2_b
-    trial += 1
+    data[event_labels[events_id[6]] + '_' + str(trial) + 'b']['eeg'] = wn_t6_b
 
-    t2_b = [[], []]
+    t6_b = [[], []]
     idx = events[7]
-    t2_b[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
-    t2_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[7]]] = {}
-    data[event_labels[events_id[7]]]['eeg'] = t2_b
-    data[event_labels[events_id[7]]]['annotations'] = annotations['trial_2b']
-
-
-    # Cut the Trial 3 white noises and stimuli
-    wn_t3_a = [[], []]
-    idx = events[8]
-    wn_t3_a[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
-    wn_t3_a[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
-    data[event_labels[events_id[8]] + '_' + str(trial) + 'a'] = {}
-    data[event_labels[events_id[8]] + '_' + str(trial) + 'a']['eeg'] = wn_t3_a
-
-    t3_a = [[], []]
-    idx = events[9]
-    t3_a[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
-    t3_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[9]]] = {}
-    data[event_labels[events_id[9]]]['eeg'] = t3_a
-    data[event_labels[events_id[9]]]['annotations'] = annotations['trial_3a']
-
-
-    wn_t3_b = [[], []]
-    idx = events[10]
-    wn_t3_b[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
-    wn_t3_b[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
-    data[event_labels[events_id[10]] + '_' + str(trial) + 'b'] = {}
-    data[event_labels[events_id[10]] + '_' + str(trial) + 'b']['eeg'] = wn_t3_b
+    t6_b[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t6_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[7]]] = {'trial': 'trial_' + str(trial) + 'b'}
+    data[event_labels[events_id[7]]]['eeg'] = t6_b
+    data[event_labels[events_id[7]]]['annotations'] = annotations['trial_6b'] if eceo \
+        else {"liking": annotations['trial_6b']['liking'], "familiarity": annotations['trial_6b']['familiarity']}
     trial += 1
 
-    t3_b = [[], []]
+    # Cut the Trial 7 white noises and stimuli
+    wn_t7_a = [[], []]
+    idx = events[8]
+    wn_t7_a[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t7_a[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[8]] + '_' + str(trial) + 'a'] = {}
+    data[event_labels[events_id[8]] + '_' + str(trial) + 'a']['eeg'] = wn_t7_a
+
+    t7_a = [[], []]
+    idx = events[9]
+    t7_a[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t7_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[9]]] = {'trial': 'trial_' + str(trial) + 'a'}
+    data[event_labels[events_id[9]]]['eeg'] = t7_a
+    data[event_labels[events_id[9]]]['annotations'] = annotations['trial_7a'] if eoec \
+        else {"liking": annotations['trial_7a']['liking'], "familiarity": annotations['trial_7a']['familiarity']}
+
+
+    wn_t7_b = [[], []]
+    idx = events[10]
+    wn_t7_b[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t7_b[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
+    data[event_labels[events_id[10]] + '_' + str(trial) + 'b'] = {}
+    data[event_labels[events_id[10]] + '_' + str(trial) + 'b']['eeg'] = wn_t7_b
+
+    t7_b = [[], []]
     idx = events[11]
-    t3_b[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
-    t3_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[11]]] = {}
-    data[event_labels[events_id[11]]]['eeg'] = t3_b
-    data[event_labels[events_id[11]]]['annotations'] = annotations['trial_3b']
+    t7_b[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t7_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[11]]] = {'trial': 'trial_' + str(trial) + 'b'}
+    data[event_labels[events_id[11]]]['eeg'] = t7_b
+    data[event_labels[events_id[11]]]['annotations'] = annotations['trial_7b'] if eceo \
+        else {"liking": annotations['trial_7b']['liking'], "familiarity": annotations['trial_7b']['familiarity']}
+    trial += 1
 
-
-    # Cut the Trial 4 white noises and stimuli
-    wn_t4_a = [[], []]
+    # Cut the Trial 8 white noises and stimuli
+    wn_t8_a = [[], []]
     idx = events[12]
-    wn_t4_a[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
-    wn_t4_a[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
+    wn_t8_a[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t8_a[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
     data[event_labels[events_id[12]] + '_' + str(trial) + 'a'] = {}
-    data[event_labels[events_id[12]] + '_' + str(trial) + 'a']['eeg'] = wn_t4_a
+    data[event_labels[events_id[12]] + '_' + str(trial) + 'a']['eeg'] = wn_t8_a
 
-    t4_a = [[], []]
+    t8_a = [[], []]
     idx = events[13]
-    t4_a[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
-    t4_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[13]]] = {}
-    data[event_labels[events_id[13]]]['eeg'] = t4_a
-    data[event_labels[events_id[13]]]['annotations'] = annotations['trial_4a']
+    t8_a[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t8_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[13]]] = {'trial': 'trial_' + str(trial) + 'a'}
+    data[event_labels[events_id[13]]]['eeg'] = t8_a
+    data[event_labels[events_id[13]]]['annotations'] = annotations['trial_8a'] if eoec \
+        else {"liking": annotations['trial_8a']['liking'], "familiarity": annotations['trial_8a']['familiarity']}
 
 
-    wn_t4_b = [[], []]
+    wn_t8_b = [[], []]
     idx = events[14]
-    wn_t4_b[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
-    wn_t4_b[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
+    wn_t8_b[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
+    wn_t8_b[1] = data_p2['recording']['channelData'][1][idx: idx + (15 * sr)]
     data[event_labels[events_id[14]] + '_' + str(trial) + 'b'] = {}
-    data[event_labels[events_id[14]] + '_' + str(trial) + 'b']['eeg'] = wn_t4_b
+    data[event_labels[events_id[14]] + '_' + str(trial) + 'b']['eeg'] = wn_t8_b
 
-    t4_b = [[], []]
+    t8_b = [[], []]
     idx = events[15]
-    t4_b[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
-    t4_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
-    data[event_labels[events_id[15]]] = {}
-    data[event_labels[events_id[15]]]['eeg'] = t4_b
-    data[event_labels[events_id[15]]]['annotations'] = annotations['trial_4b']
-
+    t8_b[0] = data_p2['recording']['channelData'][0][idx: idx + (60 * sr)]
+    t8_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
+    data[event_labels[events_id[15]]] = {'trial': 'trial_' + str(trial) + 'b'}
+    data[event_labels[events_id[15]]]['eeg'] = t8_b
+    data[event_labels[events_id[15]]]['annotations'] = annotations['trial_8b'] if eceo \
+        else {"liking": annotations['trial_8b']['liking'], "familiarity": annotations['trial_8b']['familiarity']}
 
     # Cut the Resting State EO
     exit_rest_state_eo = [[], []]
     idx = events[16]
     exit_rest_state_eo[0] = data_p2['recording']['channelData'][0][idx: idx + (120 * sr)]
     exit_rest_state_eo[1] = data_p2['recording']['channelData'][1][idx: idx + (120 * sr)]
-    data[event_labels[events_id[16]]] = {}
-    data[event_labels[events_id[16]]]['eeg'] = exit_rest_state_eo
+    data['exit/' + event_labels[events_id[16]]] = {}
+    data['exit/' + event_labels[events_id[16]]]['eeg'] = exit_rest_state_eo
 
     # Cut the Resting State EC
     exit_rest_state_ec = [[], []]
     idx = events[17]
     exit_rest_state_ec[0] = data_p2['recording']['channelData'][0][idx: idx + (120 * sr)]
     exit_rest_state_ec[1] = data_p2['recording']['channelData'][1][idx: idx + (120 * sr)]
-    data[event_labels[events_id[17]]] = {}
-    data[event_labels[events_id[17]]]['eeg'] = exit_rest_state_ec
+    data['exit/' + event_labels[events_id[17]]] = {}
+    data['exit/' + event_labels[events_id[17]]]['eeg'] = exit_rest_state_ec
 
     return data
 
