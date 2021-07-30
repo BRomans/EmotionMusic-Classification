@@ -2,14 +2,17 @@ import json
 import mne
 import glob
 import pandas
+import os
 
+dataset_folder = '../data/prepared'
 eeg_folder = 'eeg_raw'
 metadata_folder = 'metadata'
 physio_folder = 'physio_raw'
 device = {
     "acquisitionLocation": ['F4', 'F3'],
     "referencesLocation": ['M2'],
-    "groundsLocation": ['M1']
+    "groundsLocation": ['M1'],
+    "samplingRate": 250
 
 }
 
@@ -59,7 +62,21 @@ event_labels = {
 }
 
 
-def generate_em_mne_events(file, trials, part_one=True, part_two=False):
+def load_dataset():
+    """
+        Only works after generating the prepared datasets in the '../data/prepared' folder
+    """
+    dataset = {}
+    for participant in os.listdir(dataset_folder):
+        file = open(dataset_folder + '/' + participant, 'r')
+        json_data = json.load(file)
+        participant_id = participant.split('_')[0]
+        dataset[participant_id] = json_data
+        file.close()
+    return dataset
+
+
+def generate_em_mne_events(file, trials, part_one=True, part_two=False, save=False):
     raw_file = open(file)
     raw_json = json.load(raw_file)
     status_data = raw_json['recording']['statusData']
@@ -111,8 +128,9 @@ def generate_em_mne_events(file, trials, part_one=True, part_two=False):
         events.append([t_idx[16], 0, event_codes[trials[7]]])
         events.append([t_idx[17], 0, event_codes['resting_EO']])
         events.append([t_idx[18], 0, event_codes['resting_EC']])
-    evefile = file.split(".json")[0] + ".eve"
-    mne.write_events(evefile, events)
+    if save:
+        evefile = file.split(".json")[0] + ".eve"
+        mne.write_events(evefile, events)
     raw_file.close()
     return events
 
@@ -149,7 +167,7 @@ def parse_playlist(playlist_raw, group):
     return playlist
 
 
-def generate_participants_events(group_path, group_folders, group):
+def generate_participants_events(group_path, group_folders, group, save_events=True):
     for participant_id in group_folders:
         # Find and open all the .json files containing EEG data
         file_p1_path = glob.glob(group_path + '/' + participant_id + '/' + eeg_folder + '/p1/' + '*.json')[0]
@@ -171,8 +189,8 @@ def generate_participants_events(group_path, group_folders, group):
         playlist_p2 = parse_playlist(playlist_p2_raw, group)
         print(participant_id, "...loaded!")
 
-        events_p1 = generate_em_mne_events(file_p1_path, playlist_p1, part_one=True, part_two=False)
-        events_p2 = generate_em_mne_events(file_p2_path, playlist_p2, part_one=False, part_two=True)
+        events_p1 = generate_em_mne_events(file_p1_path, playlist_p1, part_one=True, part_two=False, save=save_events)
+        events_p2 = generate_em_mne_events(file_p2_path, playlist_p2, part_one=False, part_two=True, save=save_events)
         add_em_events_melo_raw(file_p1_path, events_p1)
         add_em_events_melo_raw(file_p2_path, events_p2)
         print(participant_id, "...generated events!")
@@ -182,7 +200,7 @@ def generate_participants_events(group_path, group_folders, group):
         file_metadata.close()
 
 
-def generate_participants_datasets(group_path, group_folders, group):
+def generate_participants_datasets(group_path, group_folders, group, save_events=False, save_annotations=False):
     for participant_id in group_folders:
         print("Processing participant " + participant_id)
         # Find and open all the .json files containing EEG data
@@ -213,41 +231,40 @@ def generate_participants_datasets(group_path, group_folders, group):
         playlist_p2 = parse_playlist(playlist_p2_raw, group)
         print(participant_id, "...loaded!")
 
-        events_p1 = generate_em_mne_events(file_p1_path, playlist_p1, part_one=True, part_two=False)
-        events_p2 = generate_em_mne_events(file_p2_path, playlist_p2, part_one=False, part_two=True)
-        #add_em_events_melo_raw(file_p1_path, events_p1)
-        #add_em_events_melo_raw(file_p2_path, events_p2)
+        events_p1 = generate_em_mne_events(file_p1_path, playlist_p1, part_one=True, part_two=False, save=save_events)
+        events_p2 = generate_em_mne_events(file_p2_path, playlist_p2, part_one=False, part_two=True, save=save_events)
+
         print(participant_id, "...generated events!")
 
         file_p1.close()
         file_p2.close()
         file_metadata.close()
 
-        annotations = extract_annotations(group_path, participant_id)
+        annotations = extract_annotations(group_path, participant_id, save=save_annotations)
 
         events = [e[0] for e in events_p1]
         events_id = [e[2] for e in events_p1]
-        data_cut_p1 = split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=250)
+        data_cut_p1 = split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=device["samplingRate"])
 
         print(participant_id, "...split data part 1!")
 
         events = [e[0] for e in events_p2]
         events_id = [e[2] for e in events_p2]
-        data_cut_p2 = split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=250)
+        data_cut_p2 = split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=device["samplingRate"])
 
         print(participant_id, "...split data part 2!")
 
         data_cut = {
             'participant': participant_id,
             'group': group,
+            'sampRate': device['samplingRate'],
             'acquisitionLocation': device['acquisitionLocation'],
             'referencesLocation': device['referencesLocation'],
-            'groundsLocation': device['groundsLocation']
+            'groundsLocation': device['groundsLocation'],
+            'trials': {}
         }
-        data_cut.update(data_cut_p1)
-        data_cut.update(data_cut_p2)
-        data_cut['events_p1'] = events_p1
-        data_cut['events_p2'] = events_p2
+        data_cut['trials'].update(data_cut_p1)
+        data_cut['trials'].update(data_cut_p2)
 
         out_file = open(group_path + '/' + participant_id + '/' + participant_id + "_prepared.json", "w")
 
@@ -260,14 +277,7 @@ def generate_participants_datasets(group_path, group_folders, group):
               participant_id + '/' +
               participant_id +
               "_prepared.json" + " !")
-        # participant['group'] = group
-        # participant['data_p1'] = data_p1
-        # participant['data_p2'] = data_p2
-        # participant['playlist_p1'] = playlist_p1
-        # participant['playlist_p2'] = playlist_p2
-        # participant['p1_timestamp'] = p1_timestamp
-        # participant['p2_timestamp'] = p2_timestamp
-        # participants[participant_id] = participant
+
 
 def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=250):
     eoec = group == '1EOEC'
@@ -296,7 +306,8 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     # Cut the Trial 1 white noises and stimuli
     wn_t1_a = [[], []]
     idx = events[2]
-    wn_t1_a[0] = data_p1['recording']['channelData'][0][idx + (15 * sr): idx + (30 * sr)]  # the first trial has 15 extra seconds of WN that we do not need
+    wn_t1_a[0] = data_p1['recording']['channelData'][0][
+                 idx + (15 * sr): idx + (30 * sr)]  # the first trial has 15 extra seconds of WN that we do not need
     wn_t1_a[1] = data_p1['recording']['channelData'][1][idx + (15 * sr): idx + (30 * sr)]
     data[event_labels[events_id[2]] + '_' + str(trial) + 'a'] = {}
     data[event_labels[events_id[2]] + '_' + str(trial) + 'a']['eeg'] = wn_t1_a
@@ -309,7 +320,6 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     data[event_labels[events_id[3]]]['eeg'] = t1_a
     data[event_labels[events_id[3]]]['annotations'] = annotations['trial_1a'] if eoec \
         else {"liking": annotations['trial_1a']['liking'], "familiarity": annotations['trial_1a']['familiarity']}
-
 
     wn_t1_b = [[], []]
     idx = events[4]
@@ -324,7 +334,7 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     t1_b[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[5]]] = {'trial': 'trial_' + str(trial) + 'b'}
     data[event_labels[events_id[5]]]['eeg'] = t1_b
-    data[event_labels[events_id[5]]]['annotations'] = annotations['trial_1b'] if eceo\
+    data[event_labels[events_id[5]]]['annotations'] = annotations['trial_1b'] if eceo \
         else {"liking": annotations['trial_1b']['liking'], "familiarity": annotations['trial_1b']['familiarity']}
     trial += 1
 
@@ -344,7 +354,6 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     data[event_labels[events_id[7]]]['eeg'] = t2_a
     data[event_labels[events_id[7]]]['annotations'] = annotations['trial_2a'] if eoec \
         else {"liking": annotations['trial_2a']['liking'], "familiarity": annotations['trial_2a']['familiarity']}
-
 
     wn_t2_b = [[], []]
     idx = events[8]
@@ -379,7 +388,6 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     data[event_labels[events_id[11]]]['eeg'] = t3_a
     data[event_labels[events_id[11]]]['annotations'] = annotations['trial_3a'] if eoec \
         else {"liking": annotations['trial_3a']['liking'], "familiarity": annotations['trial_3a']['familiarity']}
-
 
     wn_t3_b = [[], []]
     idx = events[12]
@@ -443,7 +451,8 @@ def split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=2
     # Cut the Trial 5 white noises and stimuli
     wn_t5_a = [[], []]
     idx = events[0]
-    wn_t5_a[0] = data_p2['recording']['channelData'][0][idx + (15 * sr): idx + (30 * sr)]  # the first trial has 15 extra seconds of WN that we do not need
+    wn_t5_a[0] = data_p2['recording']['channelData'][0][
+                 idx + (15 * sr): idx + (30 * sr)]  # the first trial has 15 extra seconds of WN that we do not need
     wn_t5_a[1] = data_p2['recording']['channelData'][1][idx + (15 * sr): idx + (30 * sr)]
     data[event_labels[events_id[0]] + '_' + str(trial) + 'a'] = {}
     data[event_labels[events_id[0]] + '_' + str(trial) + 'a']['eeg'] = wn_t5_a
@@ -525,7 +534,6 @@ def split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=2
     data[event_labels[events_id[9]]]['annotations'] = annotations['trial_7a'] if eoec \
         else {"liking": annotations['trial_7a']['liking'], "familiarity": annotations['trial_7a']['familiarity']}
 
-
     wn_t7_b = [[], []]
     idx = events[10]
     wn_t7_b[0] = data_p2['recording']['channelData'][0][idx: idx + (15 * sr)]
@@ -559,7 +567,6 @@ def split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=2
     data[event_labels[events_id[13]]]['eeg'] = t8_a
     data[event_labels[events_id[13]]]['annotations'] = annotations['trial_8a'] if eoec \
         else {"liking": annotations['trial_8a']['liking'], "familiarity": annotations['trial_8a']['familiarity']}
-
 
     wn_t8_b = [[], []]
     idx = events[14]
@@ -596,7 +603,7 @@ def split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=2
     return data
 
 
-def extract_annotations(group_path, participant_id):
+def extract_annotations(group_path, participant_id, save=False):
     file_metadata_csv_path = glob.glob(group_path + '/' + participant_id + '/' + metadata_folder + '/' + '*.csv')[0]
     annotation_csv = pandas.read_csv(
         file_metadata_csv_path,
@@ -708,14 +715,15 @@ def extract_annotations(group_path, participant_id):
             "familiarity": annotation_csv["song_two_rating_2.response"][38]
         }
     }
-    # the json file where the output must be stored
-    out_file = open(group_path + '/'
-                    + participant_id + '/'
-                    + participant_id
-                    + "_annotations.json", "w")
+    if save:
+        # the json file where the output must be stored
+        out_file = open(group_path + '/'
+                        + participant_id + '/'
+                        + participant_id
+                        + "_annotations.json", "w")
 
-    json.dump(annotations, out_file, indent=4)
+        json.dump(annotations, out_file, indent=4)
 
-    out_file.close()
+        out_file.close()
 
     return annotations
