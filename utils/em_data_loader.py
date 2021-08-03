@@ -436,7 +436,7 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     t4_b[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[17]]] = {'trial': 'trial_' + str(trial) + 'b'}
     data[event_labels[events_id[17]]]['eeg'] = t4_b
-    data[event_labels[events_id[5]]]['annotations'] = annotations['trial_4b'] if eceo \
+    data[event_labels[events_id[17]]]['annotations'] = annotations['trial_4b'] if eceo \
         else {"liking": annotations['trial_4b']['liking'], "familiarity": annotations['trial_4b']['familiarity']}
     return data
 
