@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.fft import fft, fftfreq
 
 
 def plot_annotations(data):
@@ -54,6 +56,68 @@ def plot_annotations(data):
     axs[1].set_ylabel('Arousal')
     axs[1].set_title("Valence-Arousal annotations for B trials - participant " + data['participant'])
     axs[1].grid(True)
+
+    fig.tight_layout()
+    plt.show()
+
+
+def plot_signal(channel_data, duration, sampling_rate=250, raw_xlim=[0, None], raw_ylim=[-0.0001, 0.0001]):
+    dt = 1 / sampling_rate  # sampling interval
+    Fs = 1 / dt  # sampling frequency of 250Hz
+    t = np.arange(0, duration)
+    F4 = np.array(channel_data[0])
+    F3 = np.array(channel_data[1])
+
+    plt.rcParams["figure.figsize"] = [20, 5]
+    fig, axs = plt.subplots(1, 1)
+    axs.set_title("EEG Signal")
+    axs.plot(t, F4, t, F3)
+    axs.set_xlim(raw_xlim)
+    axs.set_ylim(raw_ylim)
+    axs.set_xlabel("Time")
+    axs.set_ylabel("F4 and F3")
+    axs.grid(True)
+    fig.tight_layout()
+    plt.show()
+
+
+def plot_study(channel_data, duration, sampling_rate=250, raw_xlim=[0, None]):
+    dt = 1 / sampling_rate  # sampling interval
+    Fs = 1 / dt  # sampling frequency of 250Hz
+    t = np.arange(0, duration)
+    F4 = np.array(channel_data[0])
+    F3 = np.array(channel_data[1])
+
+    plt.rcParams["figure.figsize"] = [15, 20]
+    fig, axs = plt.subplots(4, 1)
+    axs[0].set_title("EEG Signal")
+    axs[0].plot(t, F4, t, F3)
+    axs[0].set_xlim(raw_xlim[0], raw_xlim[1])
+    axs[0].set_ylim(-0.0001, 0.0001)
+    axs[0].set_xlabel("Time")
+    axs[0].set_ylabel("F4 and F3")
+    axs[0].grid(True)
+
+    cxy, f = axs[1].cohere(F4, F3, 125, Fs)
+    axs[1].set_ylabel('coherence')
+
+    N = int(duration)
+
+    yfF4 = fft(F4)
+    yfF3 = fft(F3)
+    xf = fftfreq(N, 1/250)
+
+    axs[2].plot(xf, np.abs(yfF3), color='blue')
+    axs[2].set_xlim(0, 55)
+    axs[2].set_ylabel('Amplitude')
+    axs[2].set_xlabel('Frequency')
+    axs[2].set_title('FFT F3')
+
+    axs[3].plot(xf, np.abs(yfF4), color='orange' )
+    axs[3].set_xlim(0, 55)
+    axs[3].set_ylabel('Amplitude')
+    axs[3].set_xlabel('Frequency')
+    axs[3].set_title('FFT F4')
 
     fig.tight_layout()
     plt.show()
