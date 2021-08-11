@@ -1,7 +1,8 @@
 ../toolboxes/SignalProcessing.Toolbox
 ../toolboxes/pymensia2
 ../toolboxes/python-mensia-sigpro2
-mne
-numpy
-pandas
-matplotlib
+mne~=0.23.0
+numpy~=1.21.0
+pandas~=1.3.0
+matplotlib~=3.4.2
+scipy~=1.7.0
