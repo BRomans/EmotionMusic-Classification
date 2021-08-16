@@ -1,6 +1,8 @@
 import numpy as np
+from statistics import mean
 from mbt_pyspt.models.mybraineegdata import MyBrainEEGData
 from mbt_pyspt.modules.preprocessingflow import PreprocessingFlow
+from mbt_pyspt.modules.featuresextractionflow import FeaturesExtractionFlow
 from meegkit.asr import ASR
 from meegkit.utils.matrix import sliding_window
 from scipy import sparse
@@ -43,6 +45,40 @@ def preprocess_trial(raw_eeg, list_pp, loc, sr=250, asr_cleaning=False, asr_base
                                                         win_overlap=0.25)
         preprocessed = MyBrainEEGData(clean_preprocessed, sr, loc)
     return preprocessed
+
+
+def compute_participant_features(data, ff_list, split_data):
+    trials = data['trials']
+    for trial in trials:
+        if trial.startswith('EO') or trial.startswith('EC'):
+            extraction = FeaturesExtractionFlow(trials[trial]['prep_eeg'], features_list=ff_list, split_data=split_data)  #
+            alpha_powers, _ = extraction()
+            aw_indexes = np.subtract(alpha_powers[0], alpha_powers[1])
+            trials[trial]['alpha_pow'] = alpha_powers
+            trials[trial]['aw_idx'] = aw_indexes
+
+
+def remove_baseline(data):
+    trials = data['trials']
+    print("Removing mean baseline from each trial of participant: ", data['participant'])
+    baseline_eo = trials['enter/resting_EO']['prep_eeg']
+    baseline_ec = trials['enter/resting_EC']['prep_eeg']
+    mean_b_eo_f4 = mean(baseline_eo.matrix_data[0])
+    mean_b_eo_f3 = mean(baseline_eo.matrix_data[1])
+    mean_b_ec_f4 = mean(baseline_ec.matrix_data[0])
+    mean_b_ec_f3 = mean(baseline_ec.matrix_data[1])
+    print("Mean Baseline F4/F3 EO: ", mean_b_eo_f4, mean_b_eo_f3)
+    print("Mean Baseline F4/F3 EC: ", mean_b_ec_f4, mean_b_ec_f3)
+
+    for trial in trials:
+        if trial.startswith('EO'):
+            trial_data = trials[trial]['prep_eeg'].matrix_data
+            trial_data[0] = trial_data[0] - mean_b_eo_f4
+            trial_data[1] = trial_data[1] - mean_b_eo_f3
+        if trial.startswith('EC'):
+            trial_data = trials[trial]['prep_eeg'].matrix_data
+            trial_data[0] = trial_data[0] - mean_b_ec_f4
+            trial_data[1] = trial_data[1] - mean_b_ec_f3
 
 
 def compute_asr_reconstruction(eeg, train_duration=10, train_baseline=None, sfreq=250, win_len=0.5, win_overlap=0.66):
