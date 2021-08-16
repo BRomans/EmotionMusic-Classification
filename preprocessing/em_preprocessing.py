@@ -1,11 +1,48 @@
 import numpy as np
+from mbt_pyspt.models.mybraineegdata import MyBrainEEGData
+from mbt_pyspt.modules.preprocessingflow import PreprocessingFlow
 from meegkit.asr import ASR
 from meegkit.utils.matrix import sliding_window
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
 
-
 #  Resample the annotations and stretch them over 60 seconds depending on the amount of data points
+
+
+def preprocess_em_participant(data, list_pp, asr_cleaning=False):
+    baseline_eo = data['trials']['enter/resting_EO']['eeg']
+    baseline_ec = data['trials']['enter/resting_EC']['eeg']
+    sampling_rate = data['sampRate']
+    channel_locations = data['acquisitionLocation']
+    raw_b_eo = MyBrainEEGData(baseline_eo, sampling_rate, channel_locations)
+    raw_b_ec = MyBrainEEGData(baseline_ec, sampling_rate, channel_locations)
+    ppflow_b_eo = PreprocessingFlow(eeg_data=raw_b_eo, preprocessing_list=list_pp)
+    ppflow_b_ec = PreprocessingFlow(eeg_data=raw_b_ec, preprocessing_list=list_pp)
+    prep_b_eo = ppflow_b_eo()
+    prep_b_ec = ppflow_b_ec()
+    for trial in data['trials']:
+        data['trials'][trial]['prep_eeg'] = preprocess_trial(raw_eeg=data['trials'][trial]['eeg'],
+                                                             list_pp=list_pp,
+                                                             loc=channel_locations,
+                                                             sr=sampling_rate,
+                                                             asr_cleaning=asr_cleaning,
+                                                             asr_baseline=prep_b_ec)
+    return data
+
+
+def preprocess_trial(raw_eeg, list_pp, loc, sr=250, asr_cleaning=False, asr_baseline=None):
+    raw = MyBrainEEGData(raw_eeg, sr, loc)
+    ppflow = PreprocessingFlow(eeg_data=raw, preprocessing_list=list_pp)
+    preprocessed = ppflow()
+    if asr_cleaning:
+        clean_preprocessed = compute_asr_reconstruction(preprocessed,
+                                                        train_duration=60,
+                                                        train_baseline=asr_baseline,
+                                                        sfreq=sr,
+                                                        win_len=0.5,
+                                                        win_overlap=0.25)
+        preprocessed = MyBrainEEGData(clean_preprocessed, sr, loc)
+    return preprocessed
 
 
 def compute_asr_reconstruction(eeg, train_duration=10, train_baseline=None, sfreq=250, win_len=0.5, win_overlap=0.66):
@@ -43,7 +80,7 @@ def baseline_als_optimized(y, lam, p, niter=10):
     return z
 
 
-def avg_annotation_windows(data, n_windows):
+def participant_avg_annotation_windows(data, n_windows):
     for trial in data['trials']:
         if trial.startswith('EO'):
             annotations = data['trials'][trial]['annotations']
