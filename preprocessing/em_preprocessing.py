@@ -11,29 +11,43 @@ from scipy.sparse.linalg import spsolve
 #  Resample the annotations and stretch them over 60 seconds depending on the amount of data points
 
 
-def preprocess_em_participant(data, list_pp, asr_cleaning=False):
-    baseline_eo = data['trials']['enter/resting_EO']['eeg']
+def preprocess_em_participant(data, list_pp, bpass_freqs=None, notch_freqs=None, asr_cleaning=False):
+    #baseline_eo = data['trials']['enter/resting_EO']['eeg']
     baseline_ec = data['trials']['enter/resting_EC']['eeg']
     sampling_rate = data['sampRate']
     channel_locations = data['acquisitionLocation']
-    raw_b_eo = MyBrainEEGData(baseline_eo, sampling_rate, channel_locations)
+    #raw_b_eo = MyBrainEEGData(baseline_eo, sampling_rate, channel_locations)
     raw_b_ec = MyBrainEEGData(baseline_ec, sampling_rate, channel_locations)
-    ppflow_b_eo = PreprocessingFlow(eeg_data=raw_b_eo, preprocessing_list=list_pp)
+    #ppflow_b_eo = PreprocessingFlow(eeg_data=raw_b_eo, preprocessing_list=list_pp)
     ppflow_b_ec = PreprocessingFlow(eeg_data=raw_b_ec, preprocessing_list=list_pp)
-    prep_b_eo = ppflow_b_eo()
+    #prep_b_eo = ppflow_b_eo()
     prep_b_ec = ppflow_b_ec()
     for trial in data['trials']:
-        data['trials'][trial]['prep_eeg'] = preprocess_trial(raw_eeg=data['trials'][trial]['eeg'],
-                                                             list_pp=list_pp,
-                                                             loc=channel_locations,
-                                                             sr=sampling_rate,
-                                                             asr_cleaning=asr_cleaning,
-                                                             asr_baseline=prep_b_ec)
+        if trial.startswith('EO') or trial.startswith('EC'):
+            data['trials'][trial]['prep_eeg'] = preprocess_trial(raw_eeg=data['trials'][trial]['eeg'],
+                                                                 list_pp=list_pp,
+                                                                 loc=channel_locations,
+                                                                 sr=sampling_rate,
+                                                                 bpass_freqs=bpass_freqs,
+                                                                 notch_freqs=notch_freqs,
+                                                                 asr_cleaning=asr_cleaning,
+                                                                 asr_baseline=prep_b_ec)
     return data
 
 
-def preprocess_trial(raw_eeg, list_pp, loc, sr=250, asr_cleaning=False, asr_baseline=None):
+def preprocess_trial(raw_eeg, list_pp, loc, sr=250, bpass_freqs=None, notch_freqs=None, asr_cleaning=False, asr_baseline=None):
+    if bpass_freqs is None:
+        bpass_freqs = {
+            'l_freq': 0.1,
+            'h_freq': 30
+        }
+    if notch_freqs is None:
+        notch_freqs = (50, 100)
+
     raw = MyBrainEEGData(raw_eeg, sr, loc)
+    raw.mne_data.notch_filter(freqs=notch_freqs)
+    # eeg_data.mne_data.resample(sfreq=64)
+    raw.mne_data.filter(l_freq=bpass_freqs['l_freq'], h_freq=bpass_freqs['h_freq'])
     ppflow = PreprocessingFlow(eeg_data=raw, preprocessing_list=list_pp)
     preprocessed = ppflow()
     if asr_cleaning:
@@ -51,9 +65,11 @@ def compute_participant_features(data, ff_list, split_data):
     trials = data['trials']
     for trial in trials:
         if trial.startswith('EO') or trial.startswith('EC'):
-            extraction = FeaturesExtractionFlow(trials[trial]['prep_eeg'], features_list=ff_list, split_data=split_data)  #
+            extraction = FeaturesExtractionFlow(trials[trial]['prep_eeg'], features_list=ff_list, split_data=split_data)
             alpha_powers, _ = extraction()
             aw_indexes = np.subtract(alpha_powers[0], alpha_powers[1])
+            if "features" not in data['trials'][trial]:
+                trials[trial]['features'] = dict()
             trials[trial]['features']['alpha_pow'] = alpha_powers
             trials[trial]['features']['aw_idx'] = aw_indexes
             trials[trial]['features']['familiarity'] = trials[trial]['annotations']['familiarity']
@@ -120,12 +136,15 @@ def baseline_als_optimized(y, lam, p, niter=10):
 
 
 def participant_avg_annotation_windows(data, n_windows):
-    for trial in data['trials']:
+    trials = data['trials']
+    for trial in trials:
         if trial.startswith('EO'):
-            annotations = data['trials'][trial]['annotations']
+            if "features" not in trials[trial]:
+                trials[trial]['features'] = dict()
+            annotations = trials[trial]['annotations']
             avg_valence, avg_arousal = compute_avg_annotation_windows(annotations, n_windows)
-            data['trials'][trial]['features']['avg_x'] = avg_valence
-            data['trials'][trial]['features']['avg_y'] = avg_arousal
+            trials[trial]['features']['avg_x'] = avg_valence
+            trials[trial]['features']['avg_y'] = avg_arousal
     return data
 
 
