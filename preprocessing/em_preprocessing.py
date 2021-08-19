@@ -54,8 +54,10 @@ def compute_participant_features(data, ff_list, split_data):
             extraction = FeaturesExtractionFlow(trials[trial]['prep_eeg'], features_list=ff_list, split_data=split_data)  #
             alpha_powers, _ = extraction()
             aw_indexes = np.subtract(alpha_powers[0], alpha_powers[1])
-            trials[trial]['alpha_pow'] = alpha_powers
-            trials[trial]['aw_idx'] = aw_indexes
+            trials[trial]['features']['alpha_pow'] = alpha_powers
+            trials[trial]['features']['aw_idx'] = aw_indexes
+            trials[trial]['features']['familiarity'] = trials[trial]['annotations']['familiarity']
+            trials[trial]['features']['liking'] = trials[trial]['annotations']['liking']
 
 
 def remove_baseline(data):
@@ -102,6 +104,7 @@ def compute_asr_reconstruction(eeg, train_duration=10, train_baseline=None, sfre
     return clean_data
 
 
+# https://stackoverflow.com/questions/29156532/python-baseline-correction-library
 def baseline_als_optimized(y, lam, p, niter=10):
     L = len(y)
     D = sparse.diags([1, -2, 1], [0, -1, -2], shape=(L, L - 2))
@@ -121,8 +124,8 @@ def participant_avg_annotation_windows(data, n_windows):
         if trial.startswith('EO'):
             annotations = data['trials'][trial]['annotations']
             avg_valence, avg_arousal = compute_avg_annotation_windows(annotations, n_windows)
-            data['trials'][trial]['annotations']['avg_x'] = avg_valence
-            data['trials'][trial]['annotations']['avg_y'] = avg_arousal
+            data['trials'][trial]['features']['avg_x'] = avg_valence
+            data['trials'][trial]['features']['avg_y'] = avg_arousal
     return data
 
 
