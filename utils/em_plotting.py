@@ -288,3 +288,17 @@ def plot_study(channel_data, duration, sampling_rate=250, raw_xlim=[0, None]):
     fig.tight_layout()
     plt.show()
 
+
+def plot_linear_regression(x_test, y_test, y_pred, d_label, i_label):
+    plt.ylabel(d_label)
+    plt.xlabel(i_label)
+    plt.rcParams["figure.figsize"] = [15, 7.50]
+    plt.scatter(x_test, y_test, color='black')
+    plt.plot(x_test, y_pred, color='blue', linewidth=3)
+    plt.title("Predicting " + d_label + " over " + i_label)
+
+    plt.xticks(())
+    plt.yticks(())
+
+    plt.tight_layout()
+    plt.show()
