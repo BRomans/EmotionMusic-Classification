@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 from scipy.fft import fft, fftfreq
+
+from preprocessing.em_preprocessing import participant_avg_annotation_windows, compute_avg_annotation_windows
 
 
 def plot_annotations(data):
@@ -119,19 +122,108 @@ def plot_avg_annotations(data):
     plt.show()
 
 
-def plot_trial_annotations(x, y):
+def plot_avg_annotations_all_participants(dataset):
+    plt.rcParams["figure.figsize"] = [15, 7.50]
+    fig, axs = plt.subplots(nrows=1, ncols=2)
+
+    # Calculate average annotations for each participant
+    n_windows = 1
+    for participant_id in dataset:
+        dataset[participant_id] = participant_avg_annotation_windows(dataset[participant_id], n_windows)
+
+    # Scatter plot for average annotations of A trials for each participant
+    x = []
+    y = []
+    for participant_id in dataset:
+        x.append(dataset[participant_id]['trials']['EO/class_1_A']['annotations']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_1_A']['annotations']['avg_y'])
+    axs[0].scatter(x, y, c='green', marker='^', label='HAHV')
+
+    x = []
+    y = []
+    for participant_id in dataset:
+        x.append(dataset[participant_id]['trials']['EO/class_2_A']['annotations']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_2_A']['annotations']['avg_y'])
+    axs[0].scatter(x, y, c='cyan', marker='>', label='LAHV')
+
+    x = []
+    y = []
+    for participant_id in dataset:
+        x.append(dataset[participant_id]['trials']['EO/class_3_A']['annotations']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_3_A']['annotations']['avg_y'])
+    axs[0].scatter(x, y, c='blue', marker='v', label='LALV')
+
+    x = []
+    y = []
+    for participant_id in dataset:
+        x.append(dataset[participant_id]['trials']['EO/class_4_A']['annotations']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_4_A']['annotations']['avg_y'])
+    axs[0].scatter(x, y, c='orange', marker='<', label='HALV')
+
+    axs[0].legend(loc='upper left')
+    axs[0].set_xlim(-0.5, 0.5)
+    axs[0].set_ylim(-0.5, 0.5)
+    axs[0].set_xlabel('Valence')
+    axs[0].set_ylabel('Arousal')
+    axs[0].set_title("Valence-Arousal annotations for A trials - Average for each participant")
+    axs[0].grid(True)
+
+
+
+    # Scatter plot for average annotations of B trials for each participant
+    x = []
+    y = []
+    for participant_id in dataset:
+        x.append(dataset[participant_id]['trials']['EO/class_1_B']['annotations']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_1_B']['annotations']['avg_y'])
+    axs[1].scatter(x, y, c='green', marker='^', label='HAHV')
+
+    x = []
+    y = []
+    for participant_id in dataset:
+        x.append(dataset[participant_id]['trials']['EO/class_2_B']['annotations']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_2_B']['annotations']['avg_y'])
+    axs[1].scatter(x, y, c='cyan', marker='>', label='LAHV')
+
+    x = []
+    y = []
+    for participant_id in dataset:
+        x.append(dataset[participant_id]['trials']['EO/class_3_B']['annotations']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_3_B']['annotations']['avg_y'])
+    axs[1].scatter(x, y, c='blue', marker='v', label='LALV')
+
+    x = []
+    y = []
+    for participant_id in dataset:
+        x.append(dataset[participant_id]['trials']['EO/class_4_B']['annotations']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_4_B']['annotations']['avg_y'])
+    axs[1].scatter(x, y, c='orange', marker='<', label='HALV')
+
+    axs[1].legend(loc='upper left')
+    axs[1].set_xlim(-0.5, 0.5)
+    axs[1].set_ylim(-0.5, 0.5)
+    axs[1].set_xlabel('Valence')
+    axs[1].set_ylabel('Arousal')
+    axs[1].set_title("Valence-Arousal annotations for A trials - Average for each participant")
+    axs[1].grid(True)
+
+    fig.tight_layout()
+    plt.show()
+
+
+def plot_trial_annotations(x, y, trial='', animated=False):
     plt.rcParams["figure.figsize"] = [7.50, 7.50]
     fig, axs = plt.subplots(nrows=1, ncols=1)
-    axs.scatter(x, y, c='red', marker='x', label='Annotations')
-    axs.legend(loc='upper left')
     axs.set_xlim(-0.5, 0.5)
     axs.set_ylim(-0.5, 0.5)
     axs.set_xlabel('Valence')
     axs.set_ylabel('Arousal')
-    axs.set_title("Valence-Arousal averaged annotations for single trial")
+    axs.set_title("Valence-Arousal averaged annotations for single trial " + trial)
     axs.grid(True)
 
     fig.tight_layout()
+    axs.scatter(x, y, c='red', marker='x', label='Annotations')
+    axs.legend(loc='upper left')
     plt.show()
 
 
