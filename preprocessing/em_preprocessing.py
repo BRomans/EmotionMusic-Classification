@@ -162,3 +162,14 @@ def compute_avg_annotation_windows(annotations, n_windows):
         avg_arousal.append(avg_window)
 
     return avg_valence, avg_arousal
+
+
+def find_none_parameters(dataset, parameter):
+    for participant_id in dataset:
+        for trial in dataset[participant_id]['trials']:
+            if trial.startswith('EO') or trial.startswith('EC'):
+                param = dataset[participant_id]['trials'][trial]['features'][parameter]
+                if param == 'None':
+                    print("Found None parameter!", participant_id, trial, param)
+                    return participant_id, trial, param
+
