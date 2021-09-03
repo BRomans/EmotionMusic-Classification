@@ -100,6 +100,7 @@ def remove_baseline(data):
 
 
 def compute_asr_reconstruction(eeg, train_duration=10, train_baseline=None, sfreq=250, win_len=0.5, win_overlap=0.66):
+    """ Computes ASR for the given segment of EEG data. Taken from https://nbara.github.io/python-meegkit/ """
     # If no baseline is provided, use the a portion of the eeg signal itself
     if train_baseline is None:
         train_baseline = eeg
