@@ -3,6 +3,7 @@ import mne
 import glob
 import pandas
 import os
+from copy import deepcopy
 
 dataset_folder = '../data/prepared'
 eeg_folder = 'eeg_raw'
@@ -318,6 +319,11 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     t1_a[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[3]]] = {'trial': 'trial_' + str(trial) + 'a'}
     data[event_labels[events_id[3]]]['eeg'] = t1_a
+    q_idx = int(idx/250)
+    qualities = [[], []]
+    qualities[0] = data_p1['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p1['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[3]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[3]]]['annotations'] = annotations['trial_1a'] if eoec \
         else {"liking": annotations['trial_1a']['liking'], "familiarity": annotations['trial_1a']['familiarity']}
 
@@ -334,6 +340,11 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     t1_b[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[5]]] = {'trial': 'trial_' + str(trial) + 'b'}
     data[event_labels[events_id[5]]]['eeg'] = t1_b
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p1['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p1['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[5]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[5]]]['annotations'] = annotations['trial_1b'] if eceo \
         else {"liking": annotations['trial_1b']['liking'], "familiarity": annotations['trial_1b']['familiarity']}
     trial += 1
@@ -352,6 +363,11 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     t2_a[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[7]]] = {'trial': 'trial_' + str(trial) + 'a'}
     data[event_labels[events_id[7]]]['eeg'] = t2_a
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p1['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p1['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[7]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[7]]]['annotations'] = annotations['trial_2a'] if eoec \
         else {"liking": annotations['trial_2a']['liking'], "familiarity": annotations['trial_2a']['familiarity']}
 
@@ -368,6 +384,11 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     t2_b[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[9]]] = {'trial': 'trial_' + str(trial) + 'b'}
     data[event_labels[events_id[9]]]['eeg'] = t2_b
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p1['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p1['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[9]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[9]]]['annotations'] = annotations['trial_2b'] if eceo \
         else {"liking": annotations['trial_2b']['liking'], "familiarity": annotations['trial_2b']['familiarity']}
     trial += 1
@@ -386,6 +407,11 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     t3_a[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[11]]] = {'trial': 'trial_' + str(trial) + 'a'}
     data[event_labels[events_id[11]]]['eeg'] = t3_a
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p1['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p1['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[11]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[11]]]['annotations'] = annotations['trial_3a'] if eoec \
         else {"liking": annotations['trial_3a']['liking'], "familiarity": annotations['trial_3a']['familiarity']}
 
@@ -402,6 +428,11 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     t3_b[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[13]]] = {'trial': 'trial_' + str(trial) + 'b'}
     data[event_labels[events_id[13]]]['eeg'] = t3_b
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p1['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p1['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[13]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[13]]]['annotations'] = annotations['trial_3b'] if eceo \
         else {"liking": annotations['trial_3b']['liking'], "familiarity": annotations['trial_3b']['familiarity']}
     trial += 1
@@ -420,6 +451,11 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     t4_a[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[15]]] = {'trial': 'trial_' + str(trial) + 'a'}
     data[event_labels[events_id[15]]]['eeg'] = t4_a
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p1['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p1['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[15]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[15]]]['annotations'] = annotations['trial_4a'] if eoec \
         else {"liking": annotations['trial_4a']['liking'], "familiarity": annotations['trial_4a']['familiarity']}
 
@@ -436,6 +472,11 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     t4_b[1] = data_p1['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[17]]] = {'trial': 'trial_' + str(trial) + 'b'}
     data[event_labels[events_id[17]]]['eeg'] = t4_b
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p1['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p1['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[17]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[17]]]['annotations'] = annotations['trial_4b'] if eceo \
         else {"liking": annotations['trial_4b']['liking'], "familiarity": annotations['trial_4b']['familiarity']}
     return data
@@ -463,6 +504,11 @@ def split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=2
     t5_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[1]]] = {'trial': 'trial_' + str(trial) + 'a'}
     data[event_labels[events_id[1]]]['eeg'] = t5_a
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p2['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p2['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[1]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[1]]]['annotations'] = annotations['trial_5a'] if eoec \
         else {"liking": annotations['trial_5a']['liking'], "familiarity": annotations['trial_5a']['familiarity']}
 
@@ -479,6 +525,11 @@ def split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=2
     t5_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[3]]] = {'trial': 'trial_' + str(trial) + 'b'}
     data[event_labels[events_id[3]]]['eeg'] = t5_b
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p2['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p2['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[3]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[3]]]['annotations'] = annotations['trial_5b'] if eceo \
         else {"liking": annotations['trial_5b']['liking'], "familiarity": annotations['trial_5b']['familiarity']}
     trial += 1
@@ -497,6 +548,11 @@ def split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=2
     t6_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[5]]] = {'trial': 'trial_' + str(trial) + 'a'}
     data[event_labels[events_id[5]]]['eeg'] = t6_a
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p2['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p2['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[5]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[5]]]['annotations'] = annotations['trial_6a'] if eoec \
         else {"liking": annotations['trial_6a']['liking'], "familiarity": annotations['trial_6a']['familiarity']}
 
@@ -513,6 +569,11 @@ def split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=2
     t6_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[7]]] = {'trial': 'trial_' + str(trial) + 'b'}
     data[event_labels[events_id[7]]]['eeg'] = t6_b
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p2['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p2['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[7]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[7]]]['annotations'] = annotations['trial_6b'] if eceo \
         else {"liking": annotations['trial_6b']['liking'], "familiarity": annotations['trial_6b']['familiarity']}
     trial += 1
@@ -531,6 +592,11 @@ def split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=2
     t7_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[9]]] = {'trial': 'trial_' + str(trial) + 'a'}
     data[event_labels[events_id[9]]]['eeg'] = t7_a
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p2['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p2['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[9]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[9]]]['annotations'] = annotations['trial_7a'] if eoec \
         else {"liking": annotations['trial_7a']['liking'], "familiarity": annotations['trial_7a']['familiarity']}
 
@@ -547,6 +613,11 @@ def split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=2
     t7_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[11]]] = {'trial': 'trial_' + str(trial) + 'b'}
     data[event_labels[events_id[11]]]['eeg'] = t7_b
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p2['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p2['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[11]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[11]]]['annotations'] = annotations['trial_7b'] if eceo \
         else {"liking": annotations['trial_7b']['liking'], "familiarity": annotations['trial_7b']['familiarity']}
     trial += 1
@@ -565,6 +636,11 @@ def split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=2
     t8_a[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[13]]] = {'trial': 'trial_' + str(trial) + 'a'}
     data[event_labels[events_id[13]]]['eeg'] = t8_a
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p2['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p2['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[13]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[13]]]['annotations'] = annotations['trial_8a'] if eoec \
         else {"liking": annotations['trial_8a']['liking'], "familiarity": annotations['trial_8a']['familiarity']}
 
@@ -581,6 +657,11 @@ def split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=2
     t8_b[1] = data_p2['recording']['channelData'][1][idx: idx + (60 * sr)]
     data[event_labels[events_id[15]]] = {'trial': 'trial_' + str(trial) + 'b'}
     data[event_labels[events_id[15]]]['eeg'] = t8_b
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p2['recording']['qualities'][0][q_idx: q_idx + 60]
+    qualities[1] = data_p2['recording']['qualities'][1][q_idx: q_idx + 60]
+    data[event_labels[events_id[15]]]['qualities'] = deepcopy(qualities)
     data[event_labels[events_id[15]]]['annotations'] = annotations['trial_8b'] if eceo \
         else {"liking": annotations['trial_8b']['liking'], "familiarity": annotations['trial_8b']['familiarity']}
 
