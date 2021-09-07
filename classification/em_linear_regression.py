@@ -33,63 +33,79 @@ def lin_regression(x_train, y_train, x_test, y_test, d_label='Y', i_label='X', p
     return msq, coef, r2
 
 
-def valence_and_neuromarker(prep_dataset, train_participants, test_participants, trial_class, condition, neuromarker):
+def valence_and_neuromarker(prep_dataset, train_participants, test_participants, trial_class, condition, neuromarker, skip_qc=True):
     """ Valence annotations and a chosen neuromarker"""
     x_train = np.array([])
     y_train = np.array([])
     x_test = np.array([])
     y_test = np.array([])
     for participant_id in train_participants:
-        idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features'][neuromarker]
-        avg_valence = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features']['avg_x']
-        x_train = np.concatenate((x_train, np.array(avg_valence)))
-        y_train = np.concatenate((y_train, np.array(idx)))
+        trial = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']
+        if not trial['bad_quality'] or skip_qc:
+            idx = trial['features'][neuromarker]
+            avg_valence = trial['features']['avg_x']
+            x_train = np.concatenate((x_train, np.array(avg_valence)))
+            y_train = np.concatenate((y_train, np.array(idx)))
 
-        idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features'][neuromarker]
-        avg_valence = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features']['avg_x']
-        x_train = np.concatenate((x_train, np.array(avg_valence)))
-        y_train = np.concatenate((y_train, np.array(idx)))
+        trial = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']
+        if not trial['bad_quality'] or skip_qc:
+            idx = trial['features'][neuromarker]
+            avg_valence = trial['features']['avg_x']
+            x_train = np.concatenate((x_train, np.array(avg_valence)))
+            y_train = np.concatenate((y_train, np.array(idx)))
 
     for participant_id in test_participants:
-        idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features'][neuromarker]
-        avg_valence = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features']['avg_x']
-        x_test = np.concatenate((x_test, np.array(avg_valence)))
-        y_test = np.concatenate((y_test, np.array(idx)))
+        trial = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']
+        if not trial['bad_quality'] or skip_qc:
+            idx = trial['features'][neuromarker]
+            avg_valence = trial['features']['avg_x']
+            x_test = np.concatenate((x_test, np.array(avg_valence)))
+            y_test = np.concatenate((y_test, np.array(idx)))
 
-        idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features'][neuromarker]
-        avg_valence = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features']['avg_x']
-        x_test = np.concatenate((x_test, np.array(avg_valence)))
-        y_test = np.concatenate((y_test, np.array(idx)))
+        trial = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']
+        if not trial['bad_quality'] or skip_qc:
+            idx = trial['features'][neuromarker]
+            avg_valence = trial['features']['avg_x']
+            x_test = np.concatenate((x_test, np.array(avg_valence)))
+            y_test = np.concatenate((y_test, np.array(idx)))
     return x_train, y_train, x_test, y_test
 
 
-def arousal_and_neuromarker(prep_dataset, train_participants, test_participants, trial_class, condition, neuromarker):
+def arousal_and_neuromarker(prep_dataset, train_participants, test_participants, trial_class, condition, neuromarker, skip_qc=True):
     """ Arousal annotations and a chosen neuromarker"""
     x_train = np.array([])
     y_train = np.array([])
     x_test = np.array([])
     y_test = np.array([])
     for participant_id in train_participants:
-        idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features'][neuromarker]
-        avg_arousal = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features']['avg_y']
-        x_train = np.concatenate((x_train, np.array(avg_arousal)))
-        y_train = np.concatenate((y_train, np.array(idx)))
+        trial = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']
+        if not trial['bad_quality'] or skip_qc:
+            idx = trial['features'][neuromarker]
+            avg_arousal = trial['features']['avg_y']
+            x_train = np.concatenate((x_train, np.array(avg_arousal)))
+            y_train = np.concatenate((y_train, np.array(idx)))
 
-        idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features'][neuromarker]
-        avg_arousal = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features']['avg_y']
-        x_train = np.concatenate((x_train, np.array(avg_arousal)))
-        y_train = np.concatenate((y_train, np.array(idx)))
+        trial = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']
+        if not trial['bad_quality'] or skip_qc:
+            idx = trial['features'][neuromarker]
+            avg_arousal = trial['features']['avg_y']
+            x_train = np.concatenate((x_train, np.array(avg_arousal)))
+            y_train = np.concatenate((y_train, np.array(idx)))
 
     for participant_id in test_participants:
-        idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features'][neuromarker]
-        avg_arousal = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features']['avg_y']
-        x_test = np.concatenate((x_test, np.array(avg_arousal)))
-        y_test = np.concatenate((y_test, np.array(idx)))
+        trial = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']
+        if not trial['bad_quality'] or skip_qc:
+            idx = trial['features'][neuromarker]
+            avg_arousal = trial['features']['avg_y']
+            x_test = np.concatenate((x_test, np.array(avg_arousal)))
+            y_test = np.concatenate((y_test, np.array(idx)))
 
-        idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features'][neuromarker]
-        avg_arousal = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features']['avg_y']
-        x_test = np.concatenate((x_test, np.array(avg_arousal)))
-        y_test = np.concatenate((y_test, np.array(idx)))
+        trial = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']
+        if not trial['bad_quality'] or skip_qc:
+            idx = trial['features'][neuromarker]
+            avg_arousal = trial['features']['avg_y']
+            x_test = np.concatenate((x_test, np.array(avg_arousal)))
+            y_test = np.concatenate((y_test, np.array(idx)))
     return x_train, y_train, x_test, y_test
 
 

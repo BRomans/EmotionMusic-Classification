@@ -62,22 +62,23 @@ def preprocess_trial(raw_eeg, list_pp, loc, sr=250, bpass_freqs=None, notch_freq
     return preprocessed
 
 
-def compute_participant_features(data, ff_list, split_data, cleaned_eeg=False):
+def compute_participant_features(data, ff_list, split_data, cleaned_eeg=False, skip_qc=True):
     trials = data['trials']
     eeg_label = 'prep_eeg'
     if cleaned_eeg:
         eeg_label = 'clean_eeg'
     for trial in trials:
         if trial.startswith('EO') or trial.startswith('EC'):
-            extraction = FeaturesExtractionFlow(trials[trial][eeg_label], features_list=ff_list, split_data=split_data)
-            alpha_powers, _ = extraction()
-            aw_indexes = np.subtract(alpha_powers[0], alpha_powers[1])
-            if "features" not in data['trials'][trial]:
-                trials[trial]['features'] = dict()
-            trials[trial]['features']['alpha_pow'] = alpha_powers
-            trials[trial]['features']['aw_idx'] = aw_indexes
-            trials[trial]['features']['familiarity'] = trials[trial]['annotations']['familiarity']
-            trials[trial]['features']['liking'] = trials[trial]['annotations']['liking']
+            if not trials[trial]['bad_quality'] or skip_qc:
+                extraction = FeaturesExtractionFlow(trials[trial][eeg_label], features_list=ff_list, split_data=split_data)
+                alpha_powers, _ = extraction()
+                aw_indexes = np.subtract(alpha_powers[0], alpha_powers[1])
+                if "features" not in data['trials'][trial]:
+                    trials[trial]['features'] = dict()
+                trials[trial]['features']['alpha_pow'] = alpha_powers
+                trials[trial]['features']['aw_idx'] = aw_indexes
+                trials[trial]['features']['familiarity'] = trials[trial]['annotations']['familiarity']
+                trials[trial]['features']['liking'] = trials[trial]['annotations']['liking']
 
 
 def copy_annotations_to_ec(participant):
@@ -151,19 +152,20 @@ def baseline_als_optimized(y, lam, p, niter=10):
     return z
 
 
-def participant_avg_annotation_windows(data, n_windows, w_size=1.0, cleaned_eeg=False):
+def participant_avg_annotation_windows(data, n_windows, w_size=1.0, cleaned_eeg=False, skip_qc=True):
     windows = n_windows / w_size
     trials = data['trials']
     for trial in trials:
         if trial.startswith('EO') or trial.startswith('EC'):
-            if cleaned_eeg:
-                windows = trials[trial]['c_windows']
-            if "features" not in trials[trial]:
-                trials[trial]['features'] = dict()
-            annotations = trials[trial]['annotations']
-            avg_valence, avg_arousal = compute_avg_annotation_windows(annotations, windows, cleaned_eeg=cleaned_eeg)
-            trials[trial]['features']['avg_x'] = avg_valence
-            trials[trial]['features']['avg_y'] = avg_arousal
+            if not trials[trial]['bad_quality'] or skip_qc:
+                if cleaned_eeg:
+                    windows = trials[trial]['c_windows']
+                if "features" not in trials[trial]:
+                    trials[trial]['features'] = dict()
+                annotations = trials[trial]['annotations']
+                avg_valence, avg_arousal = compute_avg_annotation_windows(annotations, windows, cleaned_eeg=cleaned_eeg)
+                trials[trial]['features']['avg_x'] = avg_valence
+                trials[trial]['features']['avg_y'] = avg_arousal
     return data
 
 
