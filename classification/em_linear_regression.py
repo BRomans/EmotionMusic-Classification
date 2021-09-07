@@ -141,31 +141,39 @@ def prepare_regression_data_annotations(prep_dataset,train_participants, test_pa
     return x_train, y_train, x_test, y_test
 
 
-def liking_familiarity_correlation(prep_dataset, train_participants, test_participants, condition, trial_class, dependent, independent):
+def liking_familiarity_correlation(prep_dataset, train_participants, test_participants, condition, trial_class, dependent, independent, skip_qc=True):
     """ Correlations between liking and familiarity """
     x_train = np.array([])
     y_train = np.array([])
     x_test = np.array([])
     y_test = np.array([])
     for participant_id in train_participants:
-        i = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features'][independent]
-        d = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features'][dependent]
-        x_train = np.append(x_train, int(i))
-        y_train = np.append(y_train, int(d))
+        trial = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']
+        if not trial['bad_quality'] or skip_qc:
+            i = trial['features'][independent]
+            d = trial['features'][dependent]
+            x_train = np.append(x_train, int(i))
+            y_train = np.append(y_train, int(d))
 
-        i = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features'][independent]
-        d = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features'][dependent]
-        x_train = np.append(x_train, int(i))
-        y_train = np.append(y_train, int(d))
+        trial = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']
+        if not trial['bad_quality'] or skip_qc:
+            i = trial['features'][independent]
+            d = trial['features'][dependent]
+            x_train = np.append(x_train, int(i))
+            y_train = np.append(y_train, int(d))
 
     for participant_id in test_participants:
-        i = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features'][independent]
-        d = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features'][dependent]
-        x_test = np.append(x_test, int(i))
-        y_test = np.append(y_test, int(d))
+        trial = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']
+        if not trial['bad_quality'] or skip_qc:
+            i = trial['features'][independent]
+            d = trial['features'][dependent]
+            x_test = np.append(x_test, int(i))
+            y_test = np.append(y_test, int(d))
 
-        i = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features'][independent]
-        d = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features'][dependent]
-        x_test = np.append(x_test, int(i))
-        y_test = np.append(y_test, int(d))
+        trial = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']
+        if not trial['bad_quality'] or skip_qc:
+            i = trial['features'][independent]
+            d = trial['features'][dependent]
+            x_test = np.append(x_test, int(i))
+            y_test = np.append(y_test, int(d))
     return x_train, y_train, x_test, y_test

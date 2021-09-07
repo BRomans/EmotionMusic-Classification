@@ -297,8 +297,8 @@ def plot_linear_regression(x_test, y_test, y_pred, d_label, i_label):
     plt.plot(x_test, y_pred, color='blue', linewidth=3)
     plt.title("Predicting " + d_label + " over " + i_label)
 
-    plt.xticks(())
-    plt.yticks(())
+    plt.xticks()
+    plt.yticks()
 
     plt.tight_layout()
     plt.show()
