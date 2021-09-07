@@ -41,23 +41,23 @@ def valence_and_neuromarker(prep_dataset, train_participants, test_participants,
     y_test = np.array([])
     for participant_id in train_participants:
         idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features'][neuromarker]
-        avg_valence = prep_dataset[participant_id]['trials']['EO' + '/' + trial_class + 'A']['features']['avg_x']
+        avg_valence = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features']['avg_x']
         x_train = np.concatenate((x_train, np.array(avg_valence)))
         y_train = np.concatenate((y_train, np.array(idx)))
 
         idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features'][neuromarker]
-        avg_valence = prep_dataset[participant_id]['trials']['EO' + '/' + trial_class + 'B']['features']['avg_x']
+        avg_valence = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features']['avg_x']
         x_train = np.concatenate((x_train, np.array(avg_valence)))
         y_train = np.concatenate((y_train, np.array(idx)))
 
     for participant_id in test_participants:
         idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features'][neuromarker]
-        avg_valence = prep_dataset[participant_id]['trials']['EO' + '/' + trial_class + 'A']['features']['avg_x']
+        avg_valence = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features']['avg_x']
         x_test = np.concatenate((x_test, np.array(avg_valence)))
         y_test = np.concatenate((y_test, np.array(idx)))
 
         idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features'][neuromarker]
-        avg_valence = prep_dataset[participant_id]['trials']['EO' + '/' + trial_class + 'B']['features']['avg_x']
+        avg_valence = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features']['avg_x']
         x_test = np.concatenate((x_test, np.array(avg_valence)))
         y_test = np.concatenate((y_test, np.array(idx)))
     return x_train, y_train, x_test, y_test
@@ -71,23 +71,23 @@ def arousal_and_neuromarker(prep_dataset, train_participants, test_participants,
     y_test = np.array([])
     for participant_id in train_participants:
         idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features'][neuromarker]
-        avg_arousal = prep_dataset[participant_id]['trials']['EO' + '/' + trial_class + 'A']['features']['avg_y']
+        avg_arousal = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features']['avg_y']
         x_train = np.concatenate((x_train, np.array(avg_arousal)))
         y_train = np.concatenate((y_train, np.array(idx)))
 
         idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features'][neuromarker]
-        avg_arousal = prep_dataset[participant_id]['trials']['EO' + '/' + trial_class + 'B']['features']['avg_y']
+        avg_arousal = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features']['avg_y']
         x_train = np.concatenate((x_train, np.array(avg_arousal)))
         y_train = np.concatenate((y_train, np.array(idx)))
 
     for participant_id in test_participants:
         idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features'][neuromarker]
-        avg_arousal = prep_dataset[participant_id]['trials']['EO' + '/' + trial_class + 'A']['features']['avg_y']
+        avg_arousal = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'A']['features']['avg_y']
         x_test = np.concatenate((x_test, np.array(avg_arousal)))
         y_test = np.concatenate((y_test, np.array(idx)))
 
         idx = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features'][neuromarker]
-        avg_arousal = prep_dataset[participant_id]['trials']['EO' + '/' + trial_class + 'B']['features']['avg_y']
+        avg_arousal = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']['features']['avg_y']
         x_test = np.concatenate((x_test, np.array(avg_arousal)))
         y_test = np.concatenate((y_test, np.array(idx)))
     return x_train, y_train, x_test, y_test

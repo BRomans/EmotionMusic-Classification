@@ -20,45 +20,39 @@ def qi_data_removal(participant, trial_duration=60, qi_window_size=6, qi_thresho
             qualities_norm[0] = normalize_qualities(qualities[0])
             qualities_norm[1] = normalize_qualities(qualities[1])
 
-            # save the indexes that should be removed. Both channels are iterated and if one of them is below the desired quality, remove both
+            # save the indexes that should be removed as 1 and to be kept as 0. Both channels are iterated and if one of them is below the desired quality, remove both
             win_to_remove = windows_to_remove(trial_duration, qi_threshold, qualities_norm, qi_window_size)
             n_windows = len(win_to_remove)
             print("Windows to remove", win_to_remove)
-
-
 
             # Now loop through the time windows and save the preprocessed EEG in a new variable withouht the low quality data by copying window by window (1 * sampling_rate)
             cleaned_eeg = [[], []]
             split_eeg_F4 = np.array_split(prep_eeg.matrix_data[0], n_windows)
             split_eeg_F3 = np.array_split(prep_eeg.matrix_data[1], n_windows)
+            annotations['c_x'] = []
+            annotations['c_y'] = []
+            ann_sr = int(round(len(annotations["x"]) / trial_duration))
+            split_annotations_x = np.array_split(annotations["x"], n_windows)
+            split_annotations_y = np.array_split(annotations["y"], n_windows)
 
             for idx in range(0, n_windows):
                 if win_to_remove[idx] == 0:
                     cleaned_eeg[0].extend(split_eeg_F4[idx])
                     cleaned_eeg[1].extend(split_eeg_F3[idx])
+                    annotations['c_x'].extend(split_annotations_x[idx])
+                    annotations['c_y'].extend(split_annotations_y[idx])
             cleaned_eeg = np.array(cleaned_eeg)
-            print("Clean seconds of EEG:", cleaned_eeg.shape[1 ] /250)
-
-            # Finally, we also remove the annotations associated with each time window for EO trials
-            if trial.startswith('EO'):
-                annotations['c_x'] = []
-                annotations['c_y'] = []
-                ann_sr = int(round(len(annotations["x"]) / trial_duration))
-                split_annotations_x = np.array_split(annotations["x"], n_windows)
-                split_annotations_y = np.array_split(annotations["y"], n_windows)
-                for idx in range(0, n_windows):
-                    if win_to_remove[idx] == 0:
-                        annotations['c_x'].extend(split_annotations_x[idx])
-                        annotations['c_y'].extend(split_annotations_y[idx])
-                print("Clean seconds of annotations:", len(annotations['c_x']) / ann_sr,
-                      len(annotations['c_y']) / ann_sr)
+            print("Clean seconds of EEG:", cleaned_eeg.shape[1] / 250)
+            print("Clean seconds of annotations:", len(annotations['c_x']) / ann_sr,
+                  len(annotations['c_y']) / ann_sr)
 
             participant['trials'][trial]['clean_eeg'] = MyBrainEEGData(cleaned_eeg, sr, channel_locations)
-            participant['trials'][trial]['c_windows'] = n_windows
-            participant['trials'][trial]['removed_windows'] = win_to_remove
+            participant['trials'][trial]['c_windows'] = n_windows - np.count_nonzero(win_to_remove)
+            participant['trials'][trial]['all_windows'] = win_to_remove
             perc_bad = round(np.count_nonzero(win_to_remove) / len(win_to_remove) * 100, 2)
             print("Percentage of pruned data: " + str(perc_bad) + "%")
             if perc_bad > allowed_loss:
+                print("Marked trial for rejection: ", trial)
                 participant['bad_trials'] += 1
                 participant['trials'][trial]['bad_quality'] = True
 
@@ -76,7 +70,7 @@ def normalize_qualities(qualities):
 
 
 def windows_to_remove(trial_duration, qi_threshold, qualities, qi_window_size):
-    qi_windows = int(trial_duration /qi_window_size)
+    qi_windows = int(trial_duration / qi_window_size)
     win_to_remove = np.zeros(qi_windows, dtype=int)
 
     avg_qi_0 = np.average(np.array(qualities[0]).reshape(-1, qi_window_size), axis=1)

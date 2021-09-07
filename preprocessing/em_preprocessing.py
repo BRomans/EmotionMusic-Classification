@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 from statistics import mean
 from mbt_pyspt.models.mybraineegdata import MyBrainEEGData
 from mbt_pyspt.modules.preprocessingflow import PreprocessingFlow
@@ -79,6 +80,17 @@ def compute_participant_features(data, ff_list, split_data, cleaned_eeg=False):
             trials[trial]['features']['liking'] = trials[trial]['annotations']['liking']
 
 
+def copy_annotations_to_ec(participant):
+    """ Copy all the annotations from the EO condition to the respective EC condition trial"""
+    trials = participant['trials']
+    for trial in trials:
+        if trial.startswith('EC'):
+            trial_name = trial.split('/')[1]
+            eo_trial = 'EO/' + trial_name
+            trials[trial]['annotations']['x'] = copy.deepcopy(trials[eo_trial]['annotations']['x'])
+            trials[trial]['annotations']['y'] = copy.deepcopy(trials[eo_trial]['annotations']['y'])
+
+
 def remove_baseline(data):
     trials = data['trials']
     print("Removing mean baseline from each trial of participant: ", data['participant'])
@@ -146,7 +158,6 @@ def participant_avg_annotation_windows(data, n_windows, w_size=1.0, cleaned_eeg=
         if trial.startswith('EO') or trial.startswith('EC'):
             if cleaned_eeg:
                 windows = trials[trial]['c_windows']
-        if trial.startswith('EO'):
             if "features" not in trials[trial]:
                 trials[trial]['features'] = dict()
             annotations = trials[trial]['annotations']
