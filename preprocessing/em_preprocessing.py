@@ -58,11 +58,11 @@ def preprocess_trial(raw_eeg, list_pp, loc, sr=250, bpass_freqs=None, notch_freq
                                                         sfreq=sr,
                                                         win_len=0.5,
                                                         win_overlap=0.25)
-        preprocessed = MyBrainEEGData(clean_preprocessed, sr, loc)
-    return preprocessed
+        preprocessed = clean_preprocessed
+    return preprocessed.matrix_data
 
 
-def compute_participant_features(data, ff_list, split_data, cleaned_eeg=False, skip_qc=True):
+def compute_participant_features(data, ff_list, split_data, sr, loc, cleaned_eeg=False, skip_qc=True):
     trials = data['trials']
     eeg_label = 'prep_eeg'
     if cleaned_eeg:
@@ -70,7 +70,8 @@ def compute_participant_features(data, ff_list, split_data, cleaned_eeg=False, s
     for trial in trials:
         if trial.startswith('EO') or trial.startswith('EC'):
             if not trials[trial]['bad_quality'] or skip_qc:
-                extraction = FeaturesExtractionFlow(trials[trial][eeg_label], features_list=ff_list, split_data=split_data)
+                eeg = MyBrainEEGData(trials[trial][eeg_label], sr, loc)
+                extraction = FeaturesExtractionFlow(eeg, features_list=ff_list, split_data=split_data)
                 alpha_powers, _ = extraction()
                 aw_indexes = np.subtract(alpha_powers[0], alpha_powers[1])
                 if "features" not in data['trials'][trial]:
