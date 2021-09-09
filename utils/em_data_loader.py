@@ -63,13 +63,13 @@ event_labels = {
 }
 
 
-def load_dataset():
+def load_dataset(folder):
     """
         Only works after generating the prepared datasets in the '../data/prepared' folder
     """
     dataset = {}
-    for participant in os.listdir(dataset_folder):
-        file = open(dataset_folder + '/' + participant, 'r')
+    for participant in os.listdir(folder):
+        file = open(folder + '/' + participant, 'r')
         json_data = json.load(file)
         participant_id = participant.split('_')[0]
         dataset[participant_id] = json_data
