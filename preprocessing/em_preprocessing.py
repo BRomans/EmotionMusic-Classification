@@ -9,20 +9,25 @@ from meegkit.utils.matrix import sliding_window
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
 
+
 #  Resample the annotations and stretch them over 60 seconds depending on the amount of data points
 
 
 def preprocess_em_participant(data, list_pp, bpass_freqs=None, notch_freqs=None, asr_cleaning=False):
-    #baseline_eo = data['trials']['enter/resting_EO']['eeg']
-    baseline_ec = data['trials']['enter/resting_EC']['eeg']
+    baseline_ec = data['trials']['enter/resting_EC']
     sampling_rate = data['sampRate']
     channel_locations = data['acquisitionLocation']
-    #raw_b_eo = MyBrainEEGData(baseline_eo, sampling_rate, channel_locations)
     raw_b_ec = MyBrainEEGData(baseline_ec, sampling_rate, channel_locations)
-    #ppflow_b_eo = PreprocessingFlow(eeg_data=raw_b_eo, preprocessing_list=list_pp)
     ppflow_b_ec = PreprocessingFlow(eeg_data=raw_b_ec, preprocessing_list=list_pp)
-    #prep_b_eo = ppflow_b_eo()
     prep_b_ec = ppflow_b_ec()
+    data['trials']['enter/resting_EC']['prep_eeg'] = preprocess_trial(raw_eeg=data['trials']['enter/resting_EC']['eeg'],
+                                                                      list_pp=list_pp,
+                                                                      loc=channel_locations,
+                                                                      sr=sampling_rate,
+                                                                      bpass_freqs=bpass_freqs,
+                                                                      notch_freqs=notch_freqs,
+                                                                      asr_cleaning=asr_cleaning,
+                                                                      asr_baseline=prep_b_ec)
     for trial in data['trials']:
         if trial.startswith('EO') or trial.startswith('EC'):
             data['trials'][trial]['prep_eeg'] = preprocess_trial(raw_eeg=data['trials'][trial]['eeg'],
@@ -36,7 +41,8 @@ def preprocess_em_participant(data, list_pp, bpass_freqs=None, notch_freqs=None,
     return data
 
 
-def preprocess_trial(raw_eeg, list_pp, loc, sr=250, bpass_freqs=None, notch_freqs=None, asr_cleaning=False, asr_baseline=None):
+def preprocess_trial(raw_eeg, list_pp, loc, sr=250, bpass_freqs=None, notch_freqs=None, asr_cleaning=False,
+                     asr_baseline=None):
     if bpass_freqs is None:
         bpass_freqs = {
             'l_freq': 0.1,
@@ -63,6 +69,13 @@ def preprocess_trial(raw_eeg, list_pp, loc, sr=250, bpass_freqs=None, notch_freq
 
 
 def compute_participant_features(data, ff_list, split_data, sr, loc, cleaned_eeg=False, skip_qc=True):
+    """ Retrieve the alpha, beta and theta power in specified time windows to calculate the neuromarkers
+    SASI index:increases for Negative emotions and decreases for
+    positive emotions  https://pubmed.ncbi.nlm.nih.gov/26738175/
+    AW Index:
+    FMT Index:
+    FFT-based features:
+    """
     trials = data['trials']
     eeg_label = 'prep_eeg'
     if cleaned_eeg:
@@ -74,6 +87,8 @@ def compute_participant_features(data, ff_list, split_data, sr, loc, cleaned_eeg
                 extraction = FeaturesExtractionFlow(eeg, features_list=ff_list, split_data=split_data)
                 alpha_powers, _ = extraction()
                 aw_indexes = np.subtract(alpha_powers[0], alpha_powers[1])
+                sasi_index = None  # for each channel (beta - theta / beta + theta)
+
                 if "features" not in data['trials'][trial]:
                     trials[trial]['features'] = dict()
                 trials[trial]['features']['alpha_pow'] = alpha_powers
@@ -170,7 +185,7 @@ def participant_avg_annotation_windows(data, n_windows, w_size=1.0, cleaned_eeg=
     return data
 
 
-def compute_avg_annotation_windows(annotations, n_windows,  cleaned_eeg=False):
+def compute_avg_annotation_windows(annotations, n_windows, cleaned_eeg=False):
     v_label = 'x'
     a_label = 'y'
     if cleaned_eeg:
@@ -200,4 +215,3 @@ def find_none_parameters(dataset, parameter):
                 if param == 'None':
                     print("Found None parameter!", participant_id, trial, param)
                     return participant_id, trial, param
-
