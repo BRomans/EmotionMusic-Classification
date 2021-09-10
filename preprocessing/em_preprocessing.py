@@ -14,20 +14,17 @@ from scipy.sparse.linalg import spsolve
 
 
 def preprocess_em_participant(data, list_pp, bpass_freqs=None, notch_freqs=None, asr_cleaning=False):
-    baseline_ec = data['trials']['enter/resting_EC']
+    baseline_ec = data['trials']['enter/resting_EC']['eeg']
     sampling_rate = data['sampRate']
     channel_locations = data['acquisitionLocation']
-    raw_b_ec = MyBrainEEGData(baseline_ec, sampling_rate, channel_locations)
-    ppflow_b_ec = PreprocessingFlow(eeg_data=raw_b_ec, preprocessing_list=list_pp)
-    prep_b_ec = ppflow_b_ec()
-    data['trials']['enter/resting_EC']['prep_eeg'] = preprocess_trial(raw_eeg=data['trials']['enter/resting_EC']['eeg'],
-                                                                      list_pp=list_pp,
-                                                                      loc=channel_locations,
-                                                                      sr=sampling_rate,
-                                                                      bpass_freqs=bpass_freqs,
-                                                                      notch_freqs=notch_freqs,
-                                                                      asr_cleaning=asr_cleaning,
-                                                                      asr_baseline=prep_b_ec)
+    prep_b_ec = preprocess_trial(raw_eeg=baseline_ec,
+                                 list_pp=list_pp,
+                                 loc=channel_locations,
+                                 sr=sampling_rate,
+                                 bpass_freqs=bpass_freqs,
+                                 notch_freqs=notch_freqs,
+                                 asr_cleaning=asr_cleaning)
+    data['trials']['enter/resting_EC']['prep_eeg'] = prep_b_ec
     for trial in data['trials']:
         if trial.startswith('EO') or trial.startswith('EC'):
             data['trials'][trial]['prep_eeg'] = preprocess_trial(raw_eeg=data['trials'][trial]['eeg'],
@@ -58,23 +55,34 @@ def preprocess_trial(raw_eeg, list_pp, loc, sr=250, bpass_freqs=None, notch_freq
     ppflow = PreprocessingFlow(eeg_data=raw, preprocessing_list=list_pp)
     preprocessed = ppflow()
     if asr_cleaning:
-        clean_preprocessed = compute_asr_reconstruction(preprocessed,
+        clean_preprocessed = compute_asr_reconstruction(preprocessed.matrix_data,
                                                         train_duration=60,
                                                         train_baseline=asr_baseline,
                                                         sfreq=sr,
                                                         win_len=0.5,
                                                         win_overlap=0.25)
-        preprocessed = clean_preprocessed
-    return preprocessed.matrix_data
+        return clean_preprocessed
+    else:
+        return preprocessed.matrix_data
 
 
 def compute_participant_features(data, ff_list, split_data, sr, loc, cleaned_eeg=False, skip_qc=True):
     """ Retrieve the alpha, beta and theta power in specified time windows to calculate the neuromarkers
+    Normalization: should I normalize? while extracting frequency bands or after computing the neuromarkers?
+
+    Alpha Power: increasing/decreasing frontal alpha power can correlate with increasing/decreasing arousal
+
     SASI index:increases for Negative emotions and decreases for
     positive emotions  https://pubmed.ncbi.nlm.nih.gov/26738175/
-    AW Index:
-    FMT Index:
-    FFT-based features:
+
+    AW Index: alphaAF4 - alphaAF3. Left hemisphere (AF3) for Positive Valence, right hemisphere (AF4) for Negative Valence.
+            If AWIdx is positive, there is a right tendency and NV. if AWIdx is negative, there is left tendency and PV.
+            What if vaues are negatives? Should we subtract absolute values?
+
+    FMT Index: mean Theta power stimulus/ mean Theta power baseline for Fz channel. It follows approach-withdrawal tendencies
+            similarly to AWIndex but correlates more with the appreciation. Should we investigate correlation with liking?
+
+    FFT-based or wavelet based features:
     """
     trials = data['trials']
     eeg_label = 'prep_eeg'
@@ -82,17 +90,39 @@ def compute_participant_features(data, ff_list, split_data, sr, loc, cleaned_eeg
         eeg_label = 'clean_eeg'
     for trial in trials:
         if trial.startswith('EO') or trial.startswith('EC'):
+            n_win = trials[trial]['c_windows']
             if not trials[trial]['bad_quality'] or skip_qc:
                 eeg = MyBrainEEGData(trials[trial][eeg_label], sr, loc)
                 extraction = FeaturesExtractionFlow(eeg, features_list=ff_list, split_data=split_data)
-                alpha_powers, _ = extraction()
-                aw_indexes = np.subtract(alpha_powers[0], alpha_powers[1])
-                sasi_index = None  # for each channel (beta - theta / beta + theta)
+                features, labels = extraction()
+                alpha_powers = np.array([features[0][0:n_win], features[1][0:n_win]])
+                # alpha_labels = labels[0:n_win]
+                print("Alpha Powers", alpha_powers)
+                theta_powers = np.array([features[0][n_win: n_win * 2], features[1][n_win: n_win * 2]])
+                # theta_labels = labels[n_win: n_win*2]
+                # print("Theta", theta_powers, theta_labels)
+                beta_powers = np.array([features[0][n_win * 2: n_win * 3], features[1][n_win * 2: n_win * 3]])
+                # beta_labels = labels[n_win*2: n_win*3]
+                # print("Beta", beta_powers, beta_labels)
+
+                aw_idx = np.subtract(alpha_powers[0], alpha_powers[1])  # alpha AF4 - alpha AF3
+                print("AWI", aw_idx)
+
+                fmt_idx = np.mean(theta_powers, axis=0)  # mean(theta AF4, theta AF3) element-wise
+                print("FMT", fmt_idx)
+
+                sasi_idx = np.array([
+                    np.divide(np.subtract(beta_powers[0], theta_powers[0]), np.add(beta_powers[0], theta_powers[0])),
+                    np.divide(np.subtract(beta_powers[1], theta_powers[1]), np.add(beta_powers[1], theta_powers[1]))
+                ])  # (beta - theta / beta + theta)AF4, (beta - theta / beta + theta)AF3
+                print("SASI", sasi_idx)
 
                 if "features" not in data['trials'][trial]:
                     trials[trial]['features'] = dict()
                 trials[trial]['features']['alpha_pow'] = alpha_powers
-                trials[trial]['features']['aw_idx'] = aw_indexes
+                trials[trial]['features']['aw_idx'] = aw_idx
+                trials[trial]['features']['sasi_idx'] = sasi_idx
+                trials[trial]['features']['fmt_idx'] = fmt_idx
                 trials[trial]['features']['familiarity'] = trials[trial]['annotations']['familiarity']
                 trials[trial]['features']['liking'] = trials[trial]['annotations']['liking']
 
@@ -140,10 +170,10 @@ def compute_asr_reconstruction(eeg, train_duration=10, train_baseline=None, sfre
     # Train on a clean portion of data
     asr = ASR(method='euclid', win_len=win_len, win_overlap=win_overlap)
     train_idx = np.arange(0 * sfreq, train_duration * sfreq, dtype=int)
-    _, sample_mask = asr.fit(train_baseline.matrix_data[:, train_idx])
+    _, sample_mask = asr.fit(train_baseline[:, train_idx])
 
     # Apply filter using sliding (non-overlapping) windows
-    X = sliding_window(eeg.matrix_data, window=int(sfreq), step=int(sfreq))
+    X = sliding_window(eeg, window=int(sfreq), step=int(sfreq))
     Y = np.zeros_like(X)
     for i in range(X.shape[1]):
         Y[:, i, :] = asr.transform(X[:, i, :])
