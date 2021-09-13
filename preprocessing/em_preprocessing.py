@@ -70,19 +70,31 @@ def compute_participant_features(data, ff_list, split_data, sr, loc, cleaned_eeg
     """ Retrieve the alpha, beta and theta power in specified time windows to calculate the neuromarkers
     Normalization: should I normalize? while extracting frequency bands or after computing the neuromarkers?
 
-    Alpha Power: increasing/decreasing frontal alpha power can correlate with increasing/decreasing arousal
+    Alpha Power:
+    increasing/decreasing frontal alpha power can correlate with increasing/decreasing arousal
+    https://www.tandfonline.com/doi/abs/10.1080/02699930126048
 
-    SASI index:increases for Negative emotions and decreases for
-    positive emotions  https://pubmed.ncbi.nlm.nih.gov/26738175/
+    SASI index:
+    (beta - theta)/(beta + theta). Increases for Negative emotions and decreases for
+    positive emotions
+    https://pubmed.ncbi.nlm.nih.gov/26738175/
+    https://ieeexplore.ieee.org/document/8217815
 
-    AW Index: alphaAF4 - alphaAF3. Left hemisphere (AF3) for Positive Valence, right hemisphere (AF4) for Negative Valence.
-            If AWIdx is positive, there is a right tendency and NV. if AWIdx is negative, there is left tendency and PV.
-            What if vaues are negatives? Should we subtract absolute values?
+    AW Index:
+    alphaAF4 - alphaAF3. Left hemisphere (AF3) for Positive Valence, right hemisphere (AF4) for Negative Valence.
+    If AWIdx is positive, there is a right tendency and NV. if AWIdx is negative, there is left tendency and PV.
+    What if values are negatives? Should we subtract absolute values?
+    https://www.tandfonline.com/doi/abs/10.1080/02699930126048
 
-    FMT Index: mean Theta power stimulus/ mean Theta power baseline for Fz channel. It follows approach-withdrawal tendencies
-            similarly to AWIndex but correlates more with the appreciation. Should we investigate correlation with liking?
+    FMT Index:
+    mean Theta power stimulus/ mean Theta power baseline for Fz channel. It follows approach-withdrawal
+    tendencies similarly to AWIndex but it increases/decreases in correlation with pleasant/unpleasant music.
+    Should we investigate correlation with liking?
+    https://stefan-koelsch.de/papers/Sammler_2007_music-emotion-Fm-theta-HR-EEG.pdf
 
     FFT-based or wavelet based features:
+    Nothing for the moment
+
     """
     trials = data['trials']
     eeg_label = 'prep_eeg'
