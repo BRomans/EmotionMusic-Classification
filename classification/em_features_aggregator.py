@@ -81,6 +81,50 @@ def get_valence_labels(prep_dataset, participants_subset, condition, skip_qc=Tru
     return valence_labels
 
 
+def get_valence_arousal_labels(prep_dataset, participants_subset, condition, skip_qc=True):
+    """ All VA labels filtered by condition"""
+    va_labels = np.array([])
+    t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
+    for participant_id in participants_subset:
+        trials = prep_dataset[participant_id]['trials']
+        for trial_class in t_classes:
+            trial = trials[condition + '/' + trial_class + 'A']
+            if not trial['bad_quality'] or skip_qc:
+                avg_valence = trial['features']['avg_x']
+                avg_arousal = trial['features']['avg_y']
+                labels = []
+                for i in range(0, len(avg_arousal)):
+                    if avg_arousal[i] > 0 and avg_valence[i] > 0:
+                        labels.append('HAHV')
+                    elif avg_arousal[i] <= 0 and avg_valence[i] > 0:
+                        labels.append('LAHV')
+                    elif avg_arousal[i] <= 0 and avg_valence[i] <= 0:
+                        labels.append('LALV')
+                    elif avg_arousal[i] > 0 and avg_valence[i] <= 0:
+                        labels.append('HALV')
+                va_labels = np.concatenate((va_labels, np.array(labels)))
+
+            trial = trials[condition + '/' + trial_class + 'B']
+            if not trial['bad_quality'] or skip_qc:
+                avg_valence = trial['features']['avg_x']
+                avg_arousal = trial['features']['avg_y']
+                labels = []
+                for i in range(0, len(avg_arousal)):
+                    if avg_arousal[i] > 0 and avg_valence[i] > 0:
+                        labels.append('HAHV')
+                    elif avg_arousal[i] <= 0 and avg_valence[i] > 0:
+                        labels.append('LAHV')
+                    elif avg_arousal[i] <= 0 and avg_valence[i] <= 0:
+                        labels.append('LALV')
+                    elif avg_arousal[i] > 0 and avg_valence[i] <= 0:
+                        labels.append('HALV')
+                va_labels = np.concatenate((va_labels, np.array(labels)))
+    return va_labels
+
+
+
+
+
 def get_neuromarker_1D(prep_dataset, participants_subset, condition, neuromarker, skip_qc=True):
     """ Get all instances of a chosen neuromarker filtered by condition"""
     indexes = np.array([])
