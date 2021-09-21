@@ -1,14 +1,14 @@
 import numpy as np
 from copy import deepcopy
-from sklearn import svm
 from sklearn.metrics import accuracy_score, f1_score, precision_score
 from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
 
 from classification.em_features_aggregator import get_arousal_labels, get_valence_labels, get_neuromarker_2D, \
     get_neuromarker_1D, get_discrete_feature, get_valence_arousal_labels
 
 
-def run_subject_dependent_experiment_svm(dataset, condition):
+def run_subject_dependent_experiment_mlp(dataset, condition):
     print("Running new subject-dependent experiment with condition " + condition)
     arousal_results = [[], [], []]
     valence_results = [[], [], []]
@@ -43,15 +43,18 @@ def run_subject_dependent_experiment_svm(dataset, condition):
         x_va_train, x_va_test, y_va_train, y_va_test = train_test_split(X_va, y_va, test_size=0.2, random_state=1)
 
         # Arousal classifier
-        arousal_clf = svm.SVC(kernel='rbf')
+        arousal_clf = MLPClassifier(solver='lbfgs', alpha=1e-5,
+                                    hidden_layer_sizes=(5, 2), random_state=1)
         arousal_clf.fit(x_a_train, y_a_train)
 
         # Valence classifier
-        valence_clf = svm.SVC(kernel='rbf')
+        valence_clf = MLPClassifier(solver='lbfgs', alpha=1e-5,
+                                    hidden_layer_sizes=(5, 2), random_state=1)
         valence_clf.fit(x_v_train, y_v_train)
 
         # Valence-Arousal classifier
-        va_clf = svm.SVC(kernel='rbf', decision_function_shape="ovr")
+        va_clf = MLPClassifier(solver='lbfgs', alpha=1e-5,
+                               hidden_layer_sizes=(5, 2), random_state=1)
         va_clf.fit(x_va_train, y_va_train)
 
         # Arousal prediction
@@ -87,12 +90,11 @@ def run_subject_dependent_experiment_svm(dataset, condition):
     return arousal_results, valence_results, va_results
 
 
-def run_subject_independent_experiment_svm(dataset, condition):
+def run_subject_independent_experiment_mlp(dataset, condition):
     arousal_results = [[], [], []]
     valence_results = [[], [], []]
     va_results = [[], [], []]
     participant_keys = [*dataset]
-
     print("Running new subject-independent experiment with condition " + condition)
 
     for participant in dataset:
@@ -122,15 +124,18 @@ def run_subject_independent_experiment_svm(dataset, condition):
         y_va = np.array(va_labels)
 
         # Arousal classifier
-        arousal_clf = svm.SVC(kernel='rbf')
+        arousal_clf = MLPClassifier(solver='lbfgs', alpha=1e-5,
+                                    hidden_layer_sizes=(5, 2), random_state=1)
         arousal_clf.fit(X_a, y_a)
 
         # Valence classifier
-        valence_clf = svm.SVC(kernel='rbf')
+        valence_clf = MLPClassifier(solver='lbfgs', alpha=1e-5,
+                                    hidden_layer_sizes=(5, 2), random_state=1)
         valence_clf.fit(X_v, y_v)
 
         # Valence-Arousal classifier
-        va_clf = svm.SVC(kernel='rbf', decision_function_shape="ovr")
+        va_clf = MLPClassifier(solver='lbfgs', alpha=1e-5,
+                               hidden_layer_sizes=(5, 2), random_state=1)
         va_clf.fit(X_va, y_va)
 
         t_aw_idx = get_neuromarker_1D(dataset, test_participants, condition, 'aw_idx', False)
