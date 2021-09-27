@@ -293,7 +293,12 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     idx = events[0]
     enter_rest_state_eo[0] = data_p1['recording']['channelData'][0][idx: idx + (120 * sr)]
     enter_rest_state_eo[1] = data_p1['recording']['channelData'][1][idx: idx + (120 * sr)]
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p1['recording']['qualities'][0][q_idx: q_idx + 120]
+    qualities[1] = data_p1['recording']['qualities'][1][q_idx: q_idx + 120]
     data['enter/' + event_labels[events_id[0]]] = {}
+    data['enter/' + event_labels[events_id[0]]]['qualities'] = deepcopy(qualities)
     data['enter/' + event_labels[events_id[0]]]['eeg'] = enter_rest_state_eo
 
     # Cut the Resting State EC
@@ -301,7 +306,12 @@ def split_dataset_p1(data_p1, group, annotations, events, events_id, samp_rate=2
     idx = events[1]
     enter_rest_state_ec[0] = data_p1['recording']['channelData'][0][idx: idx + (120 * sr)]
     enter_rest_state_ec[1] = data_p1['recording']['channelData'][1][idx: idx + (120 * sr)]
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p1['recording']['qualities'][0][q_idx: q_idx + 120]
+    qualities[1] = data_p1['recording']['qualities'][1][q_idx: q_idx + 120]
     data['enter/' + event_labels[events_id[1]]] = {}
+    data['enter/' + event_labels[events_id[1]]]['qualities'] = deepcopy(qualities)
     data['enter/' + event_labels[events_id[1]]]['eeg'] = enter_rest_state_ec
 
     # Cut the Trial 1 white noises and stimuli
@@ -670,7 +680,12 @@ def split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=2
     idx = events[16]
     exit_rest_state_eo[0] = data_p2['recording']['channelData'][0][idx: idx + (120 * sr)]
     exit_rest_state_eo[1] = data_p2['recording']['channelData'][1][idx: idx + (120 * sr)]
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p2['recording']['qualities'][0][q_idx: q_idx + 120]
+    qualities[1] = data_p2['recording']['qualities'][1][q_idx: q_idx + 120]
     data['exit/' + event_labels[events_id[16]]] = {}
+    data['exit/' + event_labels[events_id[16]]]['qualities'] = deepcopy(qualities)
     data['exit/' + event_labels[events_id[16]]]['eeg'] = exit_rest_state_eo
 
     # Cut the Resting State EC
@@ -678,7 +693,12 @@ def split_dataset_p2(data_p2, group, annotations, events, events_id, samp_rate=2
     idx = events[17]
     exit_rest_state_ec[0] = data_p2['recording']['channelData'][0][idx: idx + (120 * sr)]
     exit_rest_state_ec[1] = data_p2['recording']['channelData'][1][idx: idx + (120 * sr)]
+    q_idx = int(idx / 250)
+    qualities = [[], []]
+    qualities[0] = data_p2['recording']['qualities'][0][q_idx: q_idx + 120]
+    qualities[1] = data_p2['recording']['qualities'][1][q_idx: q_idx + 120]
     data['exit/' + event_labels[events_id[17]]] = {}
+    data['exit/' + event_labels[events_id[17]]]['qualities'] = deepcopy(qualities)
     data['exit/' + event_labels[events_id[17]]]['eeg'] = exit_rest_state_ec
 
     return data
