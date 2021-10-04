@@ -180,7 +180,7 @@ def find_none_parameters(dataset, parameter):
     for participant_id in dataset:
         for trial in dataset[participant_id]['trials']:
             if trial.startswith('EO') or trial.startswith('EC'):
-                param = dataset[participant_id]['trials'][trial]['features'][parameter]
-                if param == 'None':
-                    print("Found None parameter!", participant_id, trial, param)
-                    return participant_id, trial, param
+                if not dataset[participant_id]['trials'][trial]['bad_quality']:
+                    param = dataset[participant_id]['trials'][trial]['features'][parameter]
+                    if param == 'None':
+                        print("Found None parameter!", participant_id, trial, param)

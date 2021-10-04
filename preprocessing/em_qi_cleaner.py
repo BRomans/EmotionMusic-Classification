@@ -20,12 +20,14 @@ def qi_data_removal(participant, trial_duration=60, qi_window_size=6, qi_thresho
             qualities_norm[0] = normalize_qualities(qualities[0])
             qualities_norm[1] = normalize_qualities(qualities[1])
 
-            # save the indexes that should be removed as 1 and to be kept as 0. Both channels are iterated and if one of them is below the desired quality, remove both
+            # save the indexes that should be removed as 1 and to be kept as 0. Both channels are iterated and if one of
+            # them is below the desired quality, remove both
             win_to_remove = windows_to_remove(trial_duration, qi_threshold, qualities_norm, qi_window_size)
             n_windows = len(win_to_remove)
             print("Windows to remove", win_to_remove)
 
-            # Now loop through the time windows and save the preprocessed EEG in a new variable withouht the low quality data by copying window by window (1 * sampling_rate)
+            # Now loop through the time windows and save the preprocessed EEG in a new variable without the low quality
+            # data by copying window by window (1 * sampling_rate)
             cleaned_eeg = [[], []]
             split_eeg_F4 = np.array_split(prep_eeg[0], n_windows)
             split_eeg_F3 = np.array_split(prep_eeg[1], n_windows)
@@ -84,7 +86,7 @@ def windows_to_remove(trial_duration, qi_threshold, qualities, qi_window_size):
     return win_to_remove
 
 
-def extract_best_baseline(participant, trial_duration, qi_window_size, bas_resting_state='enter/resting_EC'):
+def extract_best_baseline(participant, trial_duration, qi_window_size, bas_resting_state='enter/resting_EC', sr=250):
     """ Extract the best baseline segment of length qi_winwow_size seconds from the specified resting state
         WARNING: currently only enter/restingEC is preprocessed and changing this parameter would make the
         function crash """
@@ -102,11 +104,11 @@ def extract_best_baseline(participant, trial_duration, qi_window_size, bas_resti
     avg_qi_0 = np.average(np.array(qualities_norm[0][start_idx:end_idx]))
     avg_qi_1 = np.average(np.array(qualities_norm[1][start_idx:end_idx]))
 
-    # Now we iteratively look at all qualities of the baseline and we look for a segment which QC average values are better than
-    # the first one. If not, the first one is already the best one.
+    # Now we iteratively look at all qualities of the baseline and we look for a segment which QC average values are
+    # better than the first one. If not, the first one is already the best one.
     while end_idx < trial_duration:
-        start_idx += qi_window_size
-        end_idx += qi_window_size
+        start_idx += 1
+        end_idx += 1
         new_avg_qi_0 = np.average(np.array(qualities_norm[0][start_idx:end_idx]))
         new_avg_qi_1 = np.average(np.array(qualities_norm[1][start_idx:end_idx]))
         if new_avg_qi_0 > avg_qi_0 and new_avg_qi_1 > avg_qi_1:
@@ -120,8 +122,8 @@ def extract_best_baseline(participant, trial_duration, qi_window_size, bas_resti
             print(qualities_norm[1][ext_start_idx:ext_end_idx])
 
     print("Extracting baseline between second " + str(ext_start_idx) + " and second " + str(ext_end_idx))
-    baseline_eeg_F4 = prep_eeg[0][ext_start_idx * 250: ext_end_idx * 250]
-    baseline_eeg_F3 = prep_eeg[1][ext_start_idx * 250: ext_end_idx * 250]
+    baseline_eeg_F4 = prep_eeg[0][ext_start_idx * sr: ext_end_idx * sr]
+    baseline_eeg_F3 = prep_eeg[1][ext_start_idx * sr: ext_end_idx * sr]
     baseline_eeg = np.array([baseline_eeg_F4, baseline_eeg_F3])
     participant['baseline_eeg'] = baseline_eeg
 
