@@ -33,23 +33,46 @@ def compute_participant_features_baseline_normalized(participant, split_data, sr
     Nothing for the moment
 
     """
+    # Power features extraction methods
+    baseline_extraction = [("get_amp_filtered_signal", {'samp_rate': 250, 'l_freq': 4.0, 'h_freq': 28.0})]
     theta_extraction = [("get_power_theta", {'samp_rate': 250, 'l_freq': 4.0, 'h_freq': 8.0})]
     alpha_extraction = [("get_power_alpha", {'samp_rate': 250, 'l_freq': 8.0, 'h_freq': 13.0})]
     beta_extraction = [("get_power_beta", {'samp_rate': 250, 'l_freq': 13.0, 'h_freq': 28.0})]
 
+    # Other spectral features extraction methods
+    skewness_theta_ext = [("get_skewness_theta", {})]  # skewness of theta EEG in eeg_data
+    skewness_alpha_ext = [("get_skewness_alpha", {})]  # skewness of alpha EEG in eeg_data
+    skewness_beta_ext = [("get_skewness_beta", {})]  # skewness of beta EEG in eeg_data
+    kurtosis_theta_ext = [("get_kurtosis_theta", {})]  # kurtosis of theta EEG in eeg_data
+    kurtosis_alpha_ext = [("get_kurtosis_alpha", {})]  # kurtosis of alpha EEG in eeg_data
+    kurtosis_beta_ext = [("get_kurtosis_beta", {})]  # kurtosis of beta EEG in eeg_data
+    std_theta_ext = [("get_std_theta", {})]  # standard deviation of theta EEG in eeg_data
+    std_alpha_ext = [("get_std_alpha", {})]  # standard deviation of alpha EEG in eeg_data
+    std_beta_ext = [("get_std_beta", {})]  # standard deviation of beta EEG in eeg_data
+    ratio_theta_ext = [("get_ratio_theta", {})]  # theta ratio for EEG in eeg_data
+    ratio_alpha_ext = [("get_ratio_alpha", {})]  # alpha ratio for EEG in eeg_data
+    ratio_beta_ext = [("get_ratio_beta", {})]  # beta ratio for EEG in eeg_data
+    rsd_theta_ext = [("get_rsd_theta", {})]  # relative spectral difference for theta in eeg_data
+    rsd_alpha_ext = [("get_rsd_alpha", {})]  # relative spectral difference for alpha in eeg_data
+    rsd_beta_ext = [("get_rsd_beta", {})]  # relative spectral difference for beta in eeg_data
+
     baseline_eeg = MyBrainEEGData(participant['baseline_eeg'], sr, loc)
+
+    extraction = FeaturesExtractionFlow(baseline_eeg, features_list=baseline_extraction)
+    avg_bas, avg_bas_labels = extraction()
+    print("Baseline Avg Amplitude", avg_bas, avg_bas_labels)
 
     extraction = FeaturesExtractionFlow(baseline_eeg, features_list=theta_extraction)
     theta_bas, theta_bas_labels = extraction()
-    print("Baseline Theta Power", theta_bas)
+    print("Baseline Theta Power", theta_bas, theta_bas_labels)
 
     extraction = FeaturesExtractionFlow(baseline_eeg, features_list=alpha_extraction)
     alpha_bas, alpha_bas_labels = extraction()
-    print("Baseline Alpha Power", alpha_bas)
+    print("Baseline Alpha Power", alpha_bas, alpha_bas_labels)
 
     extraction = FeaturesExtractionFlow(baseline_eeg, features_list=beta_extraction)
     beta_bas, beta_bas_labels = extraction()
-    print("Baseline Beta Power", beta_bas)
+    print("Baseline Beta Power", beta_bas, beta_bas_labels)
 
     trials = participant['trials']
     eeg_label = 'prep_eeg'
@@ -79,10 +102,11 @@ def compute_participant_features_baseline_normalized(participant, split_data, sr
                 print("Beta Powers", beta_powers)
                 print("Norm Beta Powers", norm_beta_pow)
 
+                # Computing neuromarkers using decibel normalized powers
                 aw_idx = np.subtract(norm_alpha_pow[0], norm_alpha_pow[1])  # alpha AF4 - alpha AF3
                 print("AWI", aw_idx)
 
-                fmt_idx = np.median(norm_theta_pow, axis=0)  # mean(theta AF4, theta AF3) element-wise
+                fmt_idx = np.median(norm_theta_pow, axis=0)  # median(theta AF4, theta AF3) element-wise
                 print("FMT", fmt_idx)
 
                 sasi_idx = np.array([
@@ -93,12 +117,90 @@ def compute_participant_features_baseline_normalized(participant, split_data, sr
                 ])  # (beta - theta / beta + theta)AF4, (beta - theta / beta + theta)AF3
                 print("SASI", sasi_idx)
 
+                extraction = FeaturesExtractionFlow(eeg, features_list=skewness_theta_ext, split_data=split_data)
+                skewness_theta, labels = extraction()
+                print("Skewness Theta", skewness_theta)
+
+                extraction = FeaturesExtractionFlow(eeg, features_list=skewness_alpha_ext, split_data=split_data)
+                skewness_alpha, labels = extraction()
+                print("Skewness Alpha", skewness_alpha)
+
+                extraction = FeaturesExtractionFlow(eeg, features_list=skewness_beta_ext, split_data=split_data)
+                skewness_beta, labels = extraction()
+                print("Skewness Beta", skewness_beta)
+
+                extraction = FeaturesExtractionFlow(eeg, features_list=kurtosis_theta_ext, split_data=split_data)
+                kurtosis_theta, labels = extraction()
+                print("Kurtosis Theta", kurtosis_theta)
+
+                extraction = FeaturesExtractionFlow(eeg, features_list=kurtosis_alpha_ext, split_data=split_data)
+                kurtosis_alpha, labels = extraction()
+                print("Kurtosis Alpha", kurtosis_alpha)
+
+                extraction = FeaturesExtractionFlow(eeg, features_list=kurtosis_beta_ext, split_data=split_data)
+                kurtosis_beta, labels = extraction()
+                print("Kurtosis Beta", kurtosis_beta)
+
+                extraction = FeaturesExtractionFlow(eeg, features_list=std_theta_ext, split_data=split_data)
+                std_theta, labels = extraction()
+                print("Standard Deviation Theta", std_theta)
+
+                extraction = FeaturesExtractionFlow(eeg, features_list=std_alpha_ext, split_data=split_data)
+                std_alpha, labels = extraction()
+                print("Standard Deviation Alpha", std_alpha)
+
+                extraction = FeaturesExtractionFlow(eeg, features_list=std_beta_ext, split_data=split_data)
+                std_beta, labels = extraction()
+                print("Standard Deviation Beta", std_beta)
+
+                extraction = FeaturesExtractionFlow(eeg, features_list=ratio_theta_ext, split_data=split_data)
+                ratio_theta, labels = extraction()
+                print("Ratio Theta", ratio_theta)
+
+                extraction = FeaturesExtractionFlow(eeg, features_list=ratio_alpha_ext, split_data=split_data)
+                ratio_alpha, labels = extraction()
+                print("Ratio Alpha", ratio_alpha)
+
+                extraction = FeaturesExtractionFlow(eeg, features_list=ratio_beta_ext, split_data=split_data)
+                ratio_beta, labels = extraction()
+                print("Ratio Beta", ratio_beta)
+
+                extraction = FeaturesExtractionFlow(eeg, features_list=rsd_theta_ext, split_data=split_data)
+                rsd_theta, labels = extraction()
+                print("RSD Theta", rsd_theta)
+
+                extraction = FeaturesExtractionFlow(eeg, features_list=rsd_alpha_ext, split_data=split_data)
+                rsd_alpha, labels = extraction()
+                print("RSD Alpha", rsd_alpha)
+
+                extraction = FeaturesExtractionFlow(eeg, features_list=rsd_beta_ext, split_data=split_data)
+                rsd_beta, labels = extraction()
+                print("RSD Beta", rsd_beta)
+
+                # Save all features in the participant object
                 if "features" not in trials[trial]:
                     trials[trial]['features'] = dict()
-                trials[trial]['features']['alpha_pow'] = norm_alpha_pow
+                trials[trial]['features']['norm_theta_pow'] = norm_theta_pow
+                trials[trial]['features']['norm_alpha_pow'] = norm_alpha_pow
+                trials[trial]['features']['norm_beta_pow'] = norm_beta_pow
                 trials[trial]['features']['aw_idx'] = aw_idx
                 trials[trial]['features']['sasi_idx'] = sasi_idx
                 trials[trial]['features']['fmt_idx'] = fmt_idx
+                trials[trial]['features']['skewness_theta'] = skewness_theta
+                trials[trial]['features']['skewness_alpha'] = skewness_alpha
+                trials[trial]['features']['skewness_beta'] = skewness_beta
+                trials[trial]['features']['kurtosis_theta'] = kurtosis_theta
+                trials[trial]['features']['kurtosis_alpha'] = kurtosis_alpha
+                trials[trial]['features']['kurtosis_beta'] = kurtosis_beta
+                trials[trial]['features']['std_theta'] = std_theta
+                trials[trial]['features']['std_alpha'] = std_alpha
+                trials[trial]['features']['std_beta'] = std_beta
+                trials[trial]['features']['ratio_theta'] = ratio_theta
+                trials[trial]['features']['ratio_alpha'] = ratio_alpha
+                trials[trial]['features']['ratio_beta'] = ratio_beta
+                trials[trial]['features']['rsd_theta'] = rsd_theta
+                trials[trial]['features']['rsd_alpha'] = rsd_alpha
+                trials[trial]['features']['rsd_beta'] = rsd_beta
                 trials[trial]['features']['familiarity'] = trials[trial]['annotations']['familiarity']
                 trials[trial]['features']['liking'] = trials[trial]['annotations']['liking']
 
