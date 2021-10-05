@@ -20,7 +20,7 @@ def compute_participant_features_baseline_normalized(participant, split_data, sr
     AW Index:
     alphaAF4 - alphaAF3. Left hemisphere (AF3) for Positive Valence, right hemisphere (AF4) for Negative Valence.
     If AWIdx is positive, there is a right tendency and NV. if AWIdx is negative, there is left tendency and PV.
-    What if values are negatives? Should we subtract absolute values?
+    What if values are both negatives? Should we subtract absolute values?
     https://www.tandfonline.com/doi/abs/10.1080/02699930126048
 
     FMT Index:
@@ -33,7 +33,6 @@ def compute_participant_features_baseline_normalized(participant, split_data, sr
     Nothing for the moment
 
     """
-
     theta_extraction = [("get_power_theta", {'samp_rate': 250, 'l_freq': 4.0, 'h_freq': 8.0})]
     alpha_extraction = [("get_power_alpha", {'samp_rate': 250, 'l_freq': 8.0, 'h_freq': 13.0})]
     beta_extraction = [("get_power_beta", {'samp_rate': 250, 'l_freq': 13.0, 'h_freq': 28.0})]
@@ -42,15 +41,15 @@ def compute_participant_features_baseline_normalized(participant, split_data, sr
 
     extraction = FeaturesExtractionFlow(baseline_eeg, features_list=theta_extraction)
     theta_bas, theta_bas_labels = extraction()
-    print("Baseline Theta Power", theta_bas, theta_bas_labels)
+    print("Baseline Theta Power", theta_bas)
 
     extraction = FeaturesExtractionFlow(baseline_eeg, features_list=alpha_extraction)
     alpha_bas, alpha_bas_labels = extraction()
-    print("Baseline Alpha Power", alpha_bas, alpha_bas_labels)
+    print("Baseline Alpha Power", alpha_bas)
 
     extraction = FeaturesExtractionFlow(baseline_eeg, features_list=beta_extraction)
     beta_bas, beta_bas_labels = extraction()
-    print("Baseline Beta Power", beta_bas, beta_bas_labels)
+    print("Baseline Beta Power", beta_bas)
 
     trials = participant['trials']
     eeg_label = 'prep_eeg'
@@ -64,33 +63,39 @@ def compute_participant_features_baseline_normalized(participant, split_data, sr
 
                 extraction = FeaturesExtractionFlow(eeg, features_list=theta_extraction, split_data=split_data)
                 theta_powers, labels = extraction()
-                norm_theta_pow = percent_normalization(theta_powers, theta_bas)
-                print("Theta  Powers", theta_powers)
-                print("Norm Theta  Powers", norm_theta_pow)
+                norm_theta_pow = decibel_normalization(theta_powers, theta_bas)
+                print("Theta Powers", theta_powers)
+                print("Norm Theta Powers", norm_theta_pow)
 
                 extraction = FeaturesExtractionFlow(eeg, features_list=alpha_extraction, split_data=split_data)
                 alpha_powers, labels = extraction()
-                print("Alpha  Powers", alpha_powers, labels)
+                norm_alpha_pow = decibel_normalization(alpha_powers, alpha_bas)
+                print("Alpha Powers", alpha_powers)
+                print("Norm Alpha Powers", norm_alpha_pow)
 
                 extraction = FeaturesExtractionFlow(eeg, features_list=beta_extraction, split_data=split_data)
                 beta_powers, labels = extraction()
-                print("Beta  Powers", beta_powers, labels)
+                norm_beta_pow = decibel_normalization(beta_powers, beta_bas)
+                print("Beta Powers", beta_powers)
+                print("Norm Beta Powers", norm_beta_pow)
 
-                aw_idx = np.subtract(alpha_powers[0], alpha_powers[1])  # alpha AF4 - alpha AF3
+                aw_idx = np.subtract(norm_alpha_pow[0], norm_alpha_pow[1])  # alpha AF4 - alpha AF3
                 print("AWI", aw_idx)
 
-                fmt_idx = np.mean(theta_powers, axis=0)  # mean(theta AF4, theta AF3) element-wise
+                fmt_idx = np.median(norm_theta_pow, axis=0)  # mean(theta AF4, theta AF3) element-wise
                 print("FMT", fmt_idx)
 
                 sasi_idx = np.array([
-                    np.divide(np.subtract(beta_powers[0], theta_powers[0]), np.add(beta_powers[0], theta_powers[0])),
-                    np.divide(np.subtract(beta_powers[1], theta_powers[1]), np.add(beta_powers[1], theta_powers[1]))
+                    np.divide(np.subtract(norm_beta_pow[0], norm_theta_pow[0]),
+                              np.add(norm_beta_pow[0], norm_theta_pow[0])),
+                    np.divide(np.subtract(norm_beta_pow[1], norm_theta_pow[1]),
+                              np.add(norm_beta_pow[1], norm_theta_pow[1]))
                 ])  # (beta - theta / beta + theta)AF4, (beta - theta / beta + theta)AF3
                 print("SASI", sasi_idx)
 
                 if "features" not in trials[trial]:
                     trials[trial]['features'] = dict()
-                trials[trial]['features']['alpha_pow'] = alpha_powers
+                trials[trial]['features']['alpha_pow'] = norm_alpha_pow
                 trials[trial]['features']['aw_idx'] = aw_idx
                 trials[trial]['features']['sasi_idx'] = sasi_idx
                 trials[trial]['features']['fmt_idx'] = fmt_idx
@@ -109,7 +114,7 @@ def percent_normalization(freq_power, bas_freq_power):
 def decibel_normalization(freq_power, bas_freq_power):
     normalized_channels = []
     for i in range(0, freq_power.shape[0]):
-        norm_channel_pow = 10 * np.log10(freq_power[i] / bas_freq_power[i])
+        norm_channel_pow = 10 * (np.log10(freq_power[i] / bas_freq_power[i]))
         normalized_channels.append(norm_channel_pow)
     return np.array(normalized_channels)
 
