@@ -3,7 +3,9 @@ import copy
 import numpy as np
 
 
-def qi_data_removal(participant, trial_duration=60, qi_window_size=6, qi_threshold=1.0, allowed_loss=50, sr=250):
+def qi_data_removal(participant, trial_duration=60, qi_window_size=6, qi_threshold=0.5, allowed_loss=50, sr=250):
+    """ Remove data segments where QI checker values are below a certain threshold. Keep between 0.4 and 0.6 for
+    best compromise output"""
     trials = participant['trials']
     participant['bad_trials'] = 0
     for trial in trials:
@@ -45,7 +47,7 @@ def qi_data_removal(participant, trial_duration=60, qi_window_size=6, qi_thresho
                     annotations['c_x'].extend(split_annotations_x[idx])
                     annotations['c_y'].extend(split_annotations_y[idx])
             cleaned_eeg = np.array(cleaned_eeg)
-            print("Clean seconds of EEG:", cleaned_eeg.shape[1] / 250)
+            print("Clean seconds of EEG:", cleaned_eeg.shape[1] / sr)
             print("Clean seconds of annotations:", len(annotations['c_x']) / ann_sr,
                   len(annotations['c_y']) / ann_sr)
 
@@ -87,7 +89,7 @@ def windows_to_remove(trial_duration, qi_threshold, qualities, qi_window_size):
 
 
 def extract_best_baseline(participant, trial_duration, qi_window_size, bas_resting_state='enter/resting_EC', sr=250):
-    """ Extract the best baseline segment of length qi_winwow_size seconds from the specified resting state
+    """ Extract the best baseline segment of length qi_window_size seconds from the specified resting state
         WARNING: currently only enter/restingEC is preprocessed and changing this parameter would make the
         function crash """
     trials = participant['trials']
