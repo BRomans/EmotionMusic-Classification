@@ -41,6 +41,41 @@ def get_arousal_labels(prep_dataset, participants_subset, condition, skip_qc=Tru
     return arousal_labels
 
 
+def get_arousal_labels_with_neutral(prep_dataset, participants_subset, condition, skip_qc=True):
+    """ All arousal labels filtered by condition and converted into three classes: HA, LA and Neutral"""
+    arousal_labels = np.array([])
+    t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
+    for participant_id in participants_subset:
+        trials = prep_dataset[participant_id]['trials']
+        for trial_class in t_classes:
+            trial = trials[condition + '/' + trial_class + 'A']
+            if not trial['bad_quality'] or skip_qc:
+                avg_arousal = trial['features']['avg_y']
+                labels = []
+                for i in avg_arousal:
+                    if i > 0.1:
+                        labels.append("HA")
+                    elif i < -0.1:
+                        labels.append("LA")
+                    else:
+                        labels.append("N")
+                arousal_labels = np.concatenate((arousal_labels, np.array(labels)))
+
+            trial = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']
+            if not trial['bad_quality'] or skip_qc:
+                avg_arousal = trial['features']['avg_y']
+                labels = []
+                for i in avg_arousal:
+                    if i > 0.1:
+                        labels.append("HA")
+                    elif i < -0.1:
+                        labels.append("LA")
+                    else:
+                        labels.append("N")
+                arousal_labels = np.concatenate((arousal_labels, np.array(labels)))
+    return arousal_labels
+
+
 def get_valence_annotations(prep_dataset, participants_subset, condition, skip_qc=True):
     """ All valence annotations filtered by condition"""
     valence_ann = np.array([])
@@ -79,6 +114,42 @@ def get_valence_labels(prep_dataset, participants_subset, condition, skip_qc=Tru
                 labels = ["HV" if i > 0 else "LV" for i in avg_valence]
                 valence_labels = np.concatenate((valence_labels, np.array(labels)))
     return valence_labels
+
+
+def get_valence_labels_with_neutral(prep_dataset, participants_subset, condition, skip_qc=True):
+    """ All valence labels filtered by condition converted into three classes: HV, LV and Neutral"""
+    valence_labels = np.array([])
+    t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
+    for participant_id in participants_subset:
+        trials = prep_dataset[participant_id]['trials']
+        for trial_class in t_classes:
+            trial = trials[condition + '/' + trial_class + 'A']
+            if not trial['bad_quality'] or skip_qc:
+                avg_valence = trial['features']['avg_x']
+                labels = []
+                for i in avg_valence:
+                    if i > 0.1:
+                        labels.append("HV")
+                    elif i < -0.1:
+                        labels.append("LV")
+                    else:
+                        labels.append("N")
+                valence_labels = np.concatenate((valence_labels, np.array(labels)))
+
+            trial = trials[condition + '/' + trial_class + 'B']
+            if not trial['bad_quality'] or skip_qc:
+                avg_valence = trial['features']['avg_x']
+                labels = []
+                for i in avg_valence:
+                    if i > 0.1:
+                        labels.append("HV")
+                    elif i < -0.1:
+                        labels.append("LV")
+                    else:
+                        labels.append("N")
+                valence_labels = np.concatenate((valence_labels, np.array(labels)))
+    return valence_labels
+
 
 
 def get_valence_arousal_labels(prep_dataset, participants_subset, condition, skip_qc=True):
@@ -122,9 +193,6 @@ def get_valence_arousal_labels(prep_dataset, participants_subset, condition, ski
     return va_labels
 
 
-
-
-
 def get_neuromarker_1D(prep_dataset, participants_subset, condition, neuromarker, skip_qc=True):
     """ Get all instances of a chosen neuromarker filtered by condition"""
     indexes = np.array([])
@@ -154,13 +222,35 @@ def get_neuromarker_2D(prep_dataset, participants_subset, condition, neuromarker
             trial = trials[condition + '/' + trial_class + 'A']
             if not trial['bad_quality'] or skip_qc:
                 idx = trial['features'][neuromarker]
-                indexes = np.array([np.concatenate((indexes[0], np.array(idx[0]))), np.concatenate((indexes[1], np.array(idx[1])))])
+                indexes = np.array(
+                    [np.concatenate((indexes[0], np.array(idx[0]))), np.concatenate((indexes[1], np.array(idx[1])))])
 
             trial = trials[condition + '/' + trial_class + 'B']
             if not trial['bad_quality'] or skip_qc:
                 idx = trial['features'][neuromarker]
-                indexes = np.array([np.concatenate((indexes[0], np.array(idx[0]))), np.concatenate((indexes[1], np.array(idx[1])))])
+                indexes = np.array(
+                    [np.concatenate((indexes[0], np.array(idx[0]))), np.concatenate((indexes[1], np.array(idx[1])))])
     return indexes
+
+
+def get_continuous_eeg_feature(prep_dataset, participants_subset, condition, feature, skip_qc=True, n_channels=2):
+    features = [[], []]
+    t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
+    for participant_id in participants_subset:
+        trials = prep_dataset[participant_id]['trials']
+        for trial_class in t_classes:
+            trial = trials[condition + '/' + trial_class + 'A']
+            if not trial['bad_quality'] or skip_qc:
+                idx = trial['features'][feature]
+                for i in range(0, n_channels):
+                    features[i] = np.concatenate((np.array(features[i]), np.array(idx[i])))
+
+            trial = trials[condition + '/' + trial_class + 'B']
+            if not trial['bad_quality'] or skip_qc:
+                idx = trial['features'][feature]
+                for i in range(0, n_channels):
+                    features[i] = np.concatenate((np.array(features[i]), np.array(idx[i])))
+    return np.array(features)
 
 
 def get_discrete_feature(prep_dataset, participants_subset, condition, feature, skip_qc=True):
@@ -179,4 +269,27 @@ def get_discrete_feature(prep_dataset, participants_subset, condition, feature, 
             if not trial['bad_quality'] or skip_qc:
                 feat = trial['features'][feature]
                 features = np.append(features, int(feat))
+    return features
+
+
+def get_discrete_feature_as_continuous(prep_dataset, participants_subset, condition, feature, skip_qc=True):
+    """ Get all instances of a chosen trial feature, i.e. liking or familiarity, filtered by condition"""
+    features = np.array([])
+    t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
+    for participant_id in participants_subset:
+        trials = prep_dataset[participant_id]['trials']
+        for trial_class in t_classes:
+            trial = trials[condition + '/' + trial_class + 'A']
+            if not trial['bad_quality'] or skip_qc:
+                feat = trial['features'][feature]
+                n_win = trial['c_windows']
+                feat_array = np.full(shape=n_win, fill_value=int(feat), dtype=np.int)
+                features = np.concatenate((features, feat_array))
+
+            trial = trials[condition + '/' + trial_class + 'B']
+            if not trial['bad_quality'] or skip_qc:
+                feat = trial['features'][feature]
+                n_win = trial['c_windows']
+                feat_array = np.full(shape=n_win, fill_value=int(feat), dtype=np.int)
+                features = np.concatenate((features, feat_array))
     return features
