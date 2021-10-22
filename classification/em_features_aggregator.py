@@ -60,9 +60,9 @@ def get_arousal_labels_with_neutral(prep_dataset, participants_subset, condition
                 avg_arousal = trial['features']['avg_y']
                 labels = []
                 for i in avg_arousal:
-                    if i > 0.1:
+                    if i > 0.05:
                         labels.append(pos_label)
-                    elif i < -0.1:
+                    elif i < -0.05:
                         labels.append(neg_label)
                     else:
                         labels.append(neu_label)
@@ -73,9 +73,9 @@ def get_arousal_labels_with_neutral(prep_dataset, participants_subset, condition
                 avg_arousal = trial['features']['avg_y']
                 labels = []
                 for i in avg_arousal:
-                    if i > 0.1:
+                    if i > 0.05:
                         labels.append(pos_label)
-                    elif i < -0.1:
+                    elif i < -0.05:
                         labels.append(neg_label)
                     else:
                         labels.append(neu_label)
@@ -142,9 +142,9 @@ def get_valence_labels_with_neutral(prep_dataset, participants_subset, condition
                 avg_valence = trial['features']['avg_x']
                 labels = []
                 for i in avg_valence:
-                    if i > 0.1:
+                    if i > 0.05:
                         labels.append(pos_label)
-                    elif i < -0.1:
+                    elif i < -0.05:
                         labels.append(neg_label)
                     else:
                         labels.append("N")
@@ -155,9 +155,9 @@ def get_valence_labels_with_neutral(prep_dataset, participants_subset, condition
                 avg_valence = trial['features']['avg_x']
                 labels = []
                 for i in avg_valence:
-                    if i > 0.1:
+                    if i > 0.05:
                         labels.append(pos_label)
-                    elif i < -0.1:
+                    elif i < -0.05:
                         labels.append(neg_label)
                     else:
                         labels.append(neu_label)
