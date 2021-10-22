@@ -3,7 +3,8 @@ from mbt_pyspt.models.mybraineegdata import MyBrainEEGData
 from mbt_pyspt.modules.featuresextractionflow import FeaturesExtractionFlow
 
 
-def compute_participant_features_baseline_normalized(participant, split_data, sr, loc, cleaned_eeg=False, skip_qc=True):
+def compute_participant_features_baseline_normalized(participant, split_data, sr, loc, baseline_segments=True,
+                                                     cleaned_eeg=False, skip_qc=True):
     """ Retrieve the alpha, beta and theta power in specified time windows to calculate the neuromarkers
     Normalization: should I normalize? while extracting frequency bands or after computing the neuromarkers?
 
@@ -56,23 +57,21 @@ def compute_participant_features_baseline_normalized(participant, split_data, sr
     rsd_alpha_ext = [("get_rsd_alpha", {})]  # relative spectral difference for alpha in eeg_data
     rsd_beta_ext = [("get_rsd_beta", {})]  # relative spectral difference for beta in eeg_data
 
-    baseline_eeg = MyBrainEEGData(participant['baseline_eeg'], sr, loc)
+    if baseline_segments:
+        baseline_eeg_segments = participant['baseline_eeg_segments']
+        theta_bas = calculate_avg_baseline_pow(baseline_eeg_segments, theta_extraction, sr, loc)
+        alpha_bas = calculate_avg_baseline_pow(baseline_eeg_segments, alpha_extraction, sr, loc)
+        beta_bas = calculate_avg_baseline_pow(baseline_eeg_segments, beta_extraction, sr, loc)
 
-    extraction = FeaturesExtractionFlow(baseline_eeg, features_list=baseline_extraction)
-    avg_bas, avg_bas_labels = extraction()
-    print("Baseline Avg Amplitude", avg_bas, avg_bas_labels)
+    else:
+        baseline_eeg = MyBrainEEGData(participant['baseline_eeg'], sr, loc)
+        theta_bas = extract_baseline_pow(baseline_eeg, theta_extraction)
+        alpha_bas = extract_baseline_pow(baseline_eeg, alpha_extraction)
+        beta_bas = extract_baseline_pow(baseline_eeg, beta_extraction)
 
-    extraction = FeaturesExtractionFlow(baseline_eeg, features_list=theta_extraction)
-    theta_bas, theta_bas_labels = extraction()
-    print("Baseline Theta Power", theta_bas, theta_bas_labels)
-
-    extraction = FeaturesExtractionFlow(baseline_eeg, features_list=alpha_extraction)
-    alpha_bas, alpha_bas_labels = extraction()
-    print("Baseline Alpha Power", alpha_bas, alpha_bas_labels)
-
-    extraction = FeaturesExtractionFlow(baseline_eeg, features_list=beta_extraction)
-    beta_bas, beta_bas_labels = extraction()
-    print("Baseline Beta Power", beta_bas, beta_bas_labels)
+    print("Baseline Theta Power", theta_bas)
+    print("Baseline Alpha Power", alpha_bas)
+    print("Baseline Beta Power", beta_bas)
 
     trials = participant['trials']
     eeg_label = 'prep_eeg'
@@ -219,6 +218,23 @@ def decibel_normalization(freq_power, bas_freq_power):
         norm_channel_pow = 10 * (np.log10(freq_power[i] / bas_freq_power[i]))
         normalized_channels.append(norm_channel_pow)
     return np.array(normalized_channels)
+
+
+def calculate_avg_baseline_pow(baseline_eeg_segments, frequency_filter, sr, loc):
+    filtered_avg_bas = np.array([[],[]])
+    print(baseline_eeg_segments.shape)
+    for eeg_segment in baseline_eeg_segments:
+        eeg_segment = MyBrainEEGData(eeg_segment, sr, loc)
+        extraction = FeaturesExtractionFlow(eeg_segment, features_list=frequency_filter)
+        filtered_bas_seg, filtered_bas_labels = extraction()
+        filtered_avg_bas = np.concatenate((filtered_avg_bas, filtered_bas_seg), axis=1)
+    return np.mean(filtered_avg_bas, axis=1)
+
+
+def extract_baseline_pow(baseline_eeg_pow, frequency_filter):
+    extraction = FeaturesExtractionFlow(baseline_eeg_pow, features_list=frequency_filter)
+    filtered_bas, filtered_bas_labels = extraction()
+    return filtered_bas
 
 
 @DeprecationWarning
