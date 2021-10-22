@@ -1,5 +1,5 @@
 import copy
-
+import warnings
 import numpy as np
 
 
@@ -125,6 +125,9 @@ def extract_clean_baseline_segments(participant, qi_window_size, baseline_durati
     participant['baseline_eeg_segments'] = cleaned_bas_eeg
     perc_bad = round(np.count_nonzero(win_to_remove) / len(win_to_remove) * 100, 2)
     print("Percentage of pruned data in the baseline: " + str(perc_bad) + "%")
+    if perc_bad == 100:
+        warnings.warn("Warning! No baseline segment met the QI threshold criterion, using best segment instead!")
+        participant['baseline_eeg_segments'] = participant['baseline_eeg']
 
 
 def extract_best_baseline_segment(participant, trial_duration, qi_window_size, bas_resting_state='enter/resting_EC', sr=250):

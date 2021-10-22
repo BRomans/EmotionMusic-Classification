@@ -21,6 +21,16 @@ def get_arousal_annotations(prep_dataset, participants_subset, condition, skip_q
 
 
 def get_arousal_labels(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True):
+    """ All arousal labels """
+    if condition == 'EO&EC':
+        eo_arousal = get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels)
+        ec_arousal = get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels)
+        return np.concatenate((eo_arousal, ec_arousal))
+    else:
+        return get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels)
+
+
+def get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True):
     """ All arousal labels filtered by condition"""
     arousal_labels = np.array([])
     t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
@@ -103,6 +113,16 @@ def get_valence_annotations(prep_dataset, participants_subset, condition, skip_q
 
 
 def get_valence_labels(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True):
+    """ All valence labels filtered """
+    if condition == 'EO&EC':
+        eo_valence = get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels)
+        ec_valence = get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels)
+        return np.concatenate((eo_valence, ec_valence))
+    else:
+        return get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels)
+
+
+def get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True):
     """ All valence labels filtered by condition"""
     valence_labels = np.array([])
     t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
@@ -212,6 +232,16 @@ def get_valence_arousal_labels(prep_dataset, participants_subset, condition, ski
 
 
 def get_neuromarker_1D(prep_dataset, participants_subset, condition, neuromarker, skip_qc=True):
+    """ Get all instances of a chosen neuromarker """
+    if condition == 'EO&EC':
+        eo_neuromarker = get_neuromarker_1D_filtered_by_condition(prep_dataset, participants_subset, 'EO', neuromarker, skip_qc=skip_qc)
+        ec_neuromarker = get_neuromarker_1D_filtered_by_condition(prep_dataset, participants_subset, 'EC', neuromarker, skip_qc=skip_qc)
+        return np.concatenate((eo_neuromarker, ec_neuromarker))
+    else:
+        return get_neuromarker_1D_filtered_by_condition(prep_dataset, participants_subset, condition, neuromarker, skip_qc=skip_qc)
+
+
+def get_neuromarker_1D_filtered_by_condition(prep_dataset, participants_subset, condition, neuromarker, skip_qc=True):
     """ Get all instances of a chosen neuromarker filtered by condition"""
     indexes = np.array([])
     t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
@@ -231,6 +261,16 @@ def get_neuromarker_1D(prep_dataset, participants_subset, condition, neuromarker
 
 
 def get_neuromarker_2D(prep_dataset, participants_subset, condition, neuromarker, skip_qc=True):
+    """ Get all instances of a chosen neuromarker with 2 dimensions"""
+    if condition == 'EO&EC':
+        eo_neuromarker = get_neuromarker_2D_filtered_by_condition(prep_dataset, participants_subset, 'EO', neuromarker,skip_qc=skip_qc)
+        ec_neuromarker = get_neuromarker_2D_filtered_by_condition(prep_dataset, participants_subset, 'EC', neuromarker,skip_qc=skip_qc)
+        return np.concatenate((eo_neuromarker, ec_neuromarker), axis=1)
+    else:
+        return get_neuromarker_2D_filtered_by_condition(prep_dataset, participants_subset, condition, neuromarker, skip_qc=skip_qc)
+
+
+def get_neuromarker_2D_filtered_by_condition(prep_dataset, participants_subset, condition, neuromarker, skip_qc=True):
     """ Get all instances of a chosen neuromarker filtered by condition"""
     indexes = np.array([[], []])
     t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
@@ -250,8 +290,18 @@ def get_neuromarker_2D(prep_dataset, participants_subset, condition, neuromarker
                     [np.concatenate((indexes[0], np.array(idx[0]))), np.concatenate((indexes[1], np.array(idx[1])))])
     return indexes
 
-
 def get_continuous_eeg_feature(prep_dataset, participants_subset, condition, feature, skip_qc=True, n_channels=2):
+    """ Get all instances of a chosen neuromarker with 2 dimensions"""
+    if condition == 'EO&EC':
+        eo_feature = get_continuous_eeg_feature_filtered_by_condition(prep_dataset, participants_subset, 'EO', feature, skip_qc=skip_qc, n_channels=n_channels)
+        ec_feature = get_continuous_eeg_feature_filtered_by_condition(prep_dataset, participants_subset, 'EC', feature, skip_qc=skip_qc, n_channels=n_channels)
+        return np.concatenate((eo_feature, ec_feature), axis=1)
+    else:
+        return get_continuous_eeg_feature_filtered_by_condition(prep_dataset, participants_subset, condition, feature, skip_qc=skip_qc, n_channels=n_channels)
+
+
+def get_continuous_eeg_feature_filtered_by_condition(prep_dataset, participants_subset, condition, feature, skip_qc=True, n_channels=2):
+    """ Get all instances of a chosen feature filtered by condition"""
     features = [[], []]
     t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
     for participant_id in participants_subset:
@@ -291,6 +341,16 @@ def get_discrete_feature(prep_dataset, participants_subset, condition, feature, 
 
 
 def get_discrete_feature_as_continuous(prep_dataset, participants_subset, condition, feature, skip_qc=True):
+    """ Get all instances of a chosen neuromarker """
+    if condition == 'EO&EC':
+        eo_feature = get_discrete_feature_as_continuous_filtered_by_condition(prep_dataset, participants_subset, 'EO', feature, skip_qc=skip_qc)
+        ec_feature = get_discrete_feature_as_continuous_filtered_by_condition(prep_dataset, participants_subset, 'EC', feature, skip_qc=skip_qc)
+        return np.concatenate((eo_feature, ec_feature))
+    else:
+        return get_discrete_feature_as_continuous_filtered_by_condition(prep_dataset, participants_subset, condition, feature, skip_qc=skip_qc)
+
+
+def get_discrete_feature_as_continuous_filtered_by_condition(prep_dataset, participants_subset, condition, feature, skip_qc=True):
     """ Get all instances of a chosen trial feature, i.e. liking or familiarity, filtered by condition"""
     features = np.array([])
     t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
