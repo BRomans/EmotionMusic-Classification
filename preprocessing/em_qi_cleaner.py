@@ -88,7 +88,46 @@ def windows_to_remove(trial_duration, qi_threshold, qualities, qi_window_size):
     return win_to_remove
 
 
-def extract_best_baseline(participant, trial_duration, qi_window_size, bas_resting_state='enter/resting_EC', sr=250):
+def extract_clean_baseline_segments(participant, qi_window_size, baseline_duration=120, qi_threshold=0.5, bas_resting_state='enter/resting_EC', sr=250):
+    """ Extract the baseline segments cleaned of the artifacts using Quality Checker, they are kept as segments and not chained together
+        WARNING: currently only enter/restingEC is preprocessed and changing this parameter would make the
+        function crash """
+    trials = participant['trials']
+    print(bas_resting_state)
+    # find time windows that should be removed according to QI
+
+    prep_eeg = trials[bas_resting_state]['prep_eeg']
+    qualities = trials[bas_resting_state]['qualities']
+
+    qualities_norm = [[], []]
+    qualities_norm[0] = normalize_qualities(qualities[0])
+    qualities_norm[1] = normalize_qualities(qualities[1])
+
+    # save the indexes that should be removed as 1 and to be kept as 0. Both channels are iterated and if one of
+    # them is below the desired quality, remove both
+    win_to_remove = windows_to_remove(baseline_duration, qi_threshold, qualities_norm, qi_window_size)
+    n_windows = len(win_to_remove)
+    print("Windows to remove in the baseline", win_to_remove)
+
+    # Now loop through the time windows and save the preprocessed EEG in a new variable without the low quality
+    # data by copying window by window (1 * sampling_rate)
+    cleaned_bas_eeg = []
+    split_eeg_F4 = np.array_split(prep_eeg[0], n_windows)
+    split_eeg_F3 = np.array_split(prep_eeg[1], n_windows)
+
+    # segments flagged as 1 in win_to_remove are ignored
+    for idx in range(0, n_windows):
+        if win_to_remove[idx] == 0:
+            cleaned_bas_eeg.append([split_eeg_F4[idx], split_eeg_F3[idx]])
+
+    cleaned_bas_eeg = np.array(cleaned_bas_eeg)
+
+    participant['baseline_eeg_segments'] = cleaned_bas_eeg
+    perc_bad = round(np.count_nonzero(win_to_remove) / len(win_to_remove) * 100, 2)
+    print("Percentage of pruned data in the baseline: " + str(perc_bad) + "%")
+
+
+def extract_best_baseline_segment(participant, trial_duration, qi_window_size, bas_resting_state='enter/resting_EC', sr=250):
     """ Extract the best baseline segment of length qi_window_size seconds from the specified resting state
         WARNING: currently only enter/restingEC is preprocessed and changing this parameter would make the
         function crash """
