@@ -23,8 +23,8 @@ def get_arousal_annotations(prep_dataset, participants_subset, condition, skip_q
 def get_arousal_labels(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True):
     """ All arousal labels """
     if condition == 'EO&EC':
-        eo_arousal = get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels)
-        ec_arousal = get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels)
+        eo_arousal = get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, 'EO', skip_qc=skip_qc, string_labels=string_labels)
+        ec_arousal = get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, 'EC', skip_qc=skip_qc, string_labels=string_labels)
         return np.concatenate((eo_arousal, ec_arousal))
     else:
         return get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels)
@@ -113,10 +113,10 @@ def get_valence_annotations(prep_dataset, participants_subset, condition, skip_q
 
 
 def get_valence_labels(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True):
-    """ All valence labels filtered """
+    """ All valence labels """
     if condition == 'EO&EC':
-        eo_valence = get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels)
-        ec_valence = get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels)
+        eo_valence = get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, 'EO', skip_qc=skip_qc, string_labels=string_labels)
+        ec_valence = get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, 'EC', skip_qc=skip_qc, string_labels=string_labels)
         return np.concatenate((eo_valence, ec_valence))
     else:
         return get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels)
@@ -186,6 +186,16 @@ def get_valence_labels_with_neutral(prep_dataset, participants_subset, condition
 
 
 def get_valence_arousal_labels(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True):
+    """ All valence labels """
+    if condition == 'EO&EC':
+        eo_valence_arousal = get_valence_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, 'EO', skip_qc=skip_qc, string_labels=string_labels)
+        ec_valence_arousal = get_valence_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, 'EC', skip_qc=skip_qc, string_labels=string_labels)
+        return np.concatenate((eo_valence_arousal, ec_valence_arousal))
+    else:
+        return get_valence_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels)
+
+
+def get_valence_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True):
     """ All VA labels filtered by condition"""
     va_labels = np.array([])
     t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
