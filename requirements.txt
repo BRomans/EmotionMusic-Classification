@@ -8,3 +8,5 @@ matplotlib~=3.4.2
 scipy~=1.7.0
 meegkit~=0.1.1
 scikit-learn~=1.0
+yellowbrick
+pandas-profiling
