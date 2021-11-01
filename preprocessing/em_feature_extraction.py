@@ -4,7 +4,7 @@ from mbt_pyspt.modules.featuresextractionflow import FeaturesExtractionFlow
 
 
 def compute_participant_features_baseline_normalized(participant, split_data, sr, loc, baseline_segments=True,
-                                                     cleaned_eeg=False, skip_qc=True):
+                                                     cleaned_eeg=False, skip_qc=True, mbt_normalization=False):
     """ Retrieve the alpha, beta and theta power in specified time windows to calculate the neuromarkers
     Normalization: should I normalize? while extracting frequency bands or after computing the neuromarkers?
 
@@ -39,6 +39,10 @@ def compute_participant_features_baseline_normalized(participant, split_data, sr
     theta_extraction = [("get_power_theta", {'samp_rate': 250, 'l_freq': 4.0, 'h_freq': 8.0})]
     alpha_extraction = [("get_power_alpha", {'samp_rate': 250, 'l_freq': 8.0, 'h_freq': 13.0})]
     beta_extraction = [("get_power_beta", {'samp_rate': 250, 'l_freq': 13.0, 'h_freq': 28.0})]
+
+    theta_norm_extraction = [("get_normalized_power_theta", {'samp_rate': 250, 'l_freq': 4.0, 'h_freq': 8.0})]
+    alpha_norm_extraction = [("get_normalized_power_alpha", {'samp_rate': 250, 'l_freq': 8.0, 'h_freq': 13.0})]
+    beta_norm_extraction = [("get_normalized_power_beta", {'samp_rate': 250, 'l_freq': 13.0, 'h_freq': 28.0})]
 
     # Other spectral features extraction methods
     skewness_theta_ext = [("get_skewness_theta", {})]  # skewness of theta EEG in eeg_data
@@ -83,23 +87,36 @@ def compute_participant_features_baseline_normalized(participant, split_data, sr
             if not trials[trial]['bad_quality'] or skip_qc:
                 eeg = MyBrainEEGData(trials[trial][eeg_label], sr, loc)
 
-                extraction = FeaturesExtractionFlow(eeg, features_list=theta_extraction, split_data=split_data)
-                theta_powers, labels = extraction()
-                norm_theta_pow = decibel_normalization(theta_powers, theta_bas)
-                print("Theta Powers", theta_powers)
-                print("Norm Theta Powers", norm_theta_pow)
+                if mbt_normalization:
+                    extraction = FeaturesExtractionFlow(eeg, features_list=theta_norm_extraction, split_data=split_data)
+                    norm_theta_pow, labels = extraction()
+                    print("Norm Theta Powers", norm_theta_pow)
 
-                extraction = FeaturesExtractionFlow(eeg, features_list=alpha_extraction, split_data=split_data)
-                alpha_powers, labels = extraction()
-                norm_alpha_pow = decibel_normalization(alpha_powers, alpha_bas)
-                print("Alpha Powers", alpha_powers)
-                print("Norm Alpha Powers", norm_alpha_pow)
+                    extraction = FeaturesExtractionFlow(eeg, features_list=alpha_norm_extraction, split_data=split_data)
+                    norm_alpha_pow, labels = extraction()
+                    print("Norm Alpha Powers", norm_alpha_pow)
 
-                extraction = FeaturesExtractionFlow(eeg, features_list=beta_extraction, split_data=split_data)
-                beta_powers, labels = extraction()
-                norm_beta_pow = decibel_normalization(beta_powers, beta_bas)
-                print("Beta Powers", beta_powers)
-                print("Norm Beta Powers", norm_beta_pow)
+                    extraction = FeaturesExtractionFlow(eeg, features_list=beta_norm_extraction, split_data=split_data)
+                    norm_beta_pow, labels = extraction()
+                    print("Norm Beta Powers", norm_beta_pow)
+                else:
+                    extraction = FeaturesExtractionFlow(eeg, features_list=theta_extraction, split_data=split_data)
+                    theta_powers, labels = extraction()
+                    norm_theta_pow = decibel_normalization(theta_powers, theta_bas)
+                    print("Theta Powers", theta_powers)
+                    print("Norm Theta Powers", norm_theta_pow)
+
+                    extraction = FeaturesExtractionFlow(eeg, features_list=alpha_extraction, split_data=split_data)
+                    alpha_powers, labels = extraction()
+                    norm_alpha_pow = decibel_normalization(alpha_powers, alpha_bas)
+                    print("Alpha Powers", alpha_powers)
+                    print("Norm Alpha Powers", norm_alpha_pow)
+
+                    extraction = FeaturesExtractionFlow(eeg, features_list=beta_extraction, split_data=split_data)
+                    beta_powers, labels = extraction()
+                    norm_beta_pow = decibel_normalization(beta_powers, beta_bas)
+                    print("Beta Powers", beta_powers)
+                    print("Norm Beta Powers", norm_beta_pow)
 
                 # Computing neuromarkers using decibel normalized powers
                 aw_idx = np.subtract(norm_alpha_pow[0], norm_alpha_pow[1])  # alpha AF4 - alpha AF3
