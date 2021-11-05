@@ -22,20 +22,20 @@ def get_arousal_annotations(prep_dataset, participants_subset, condition, skip_q
     return arousal_ann
 
 
-def get_arousal_labels(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True, t_classes=None):
+def get_arousal_labels(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True, t_classes=None, normalize_labels=False):
     """ All arousal user labels """
     if t_classes is None:
         t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
     if condition == 'EO&EC':
-        eo_arousal = get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, 'EO', skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes)
-        ec_arousal = get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, 'EC', skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes)
+        eo_arousal = get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, 'EO', skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes, normalize_labels=normalize_labels)
+        ec_arousal = get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, 'EC', skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes, normalize_labels=normalize_labels)
         return np.concatenate((eo_arousal, ec_arousal))
     else:
-        return get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes)
+        return get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes, normalize_labels=normalize_labels)
 
 
 def get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True,
-                                             t_classes=None):
+                                             t_classes=None, normalize_labels=False):
     """ All arousal user labels filtered by condition"""
     if t_classes is None:
         t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
@@ -50,12 +50,16 @@ def get_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, 
             trial = trials[condition + '/' + trial_class + 'A']
             if not trial['bad_quality'] or skip_qc:
                 avg_arousal = trial['features']['avg_y']
+                if normalize_labels:
+                    avg_arousal = 2. * (avg_arousal - np.min(avg_arousal)) / np.ptp(avg_arousal) - 1
                 labels = [pos_label if i > 0 else neg_label for i in avg_arousal]
                 arousal_labels = np.concatenate((arousal_labels, np.array(labels)))
 
             trial = prep_dataset[participant_id]['trials'][condition + '/' + trial_class + 'B']
             if not trial['bad_quality'] or skip_qc:
                 avg_arousal = trial['features']['avg_y']
+                if normalize_labels:
+                    avg_arousal = 2. * (avg_arousal - np.min(avg_arousal)) / np.ptp(avg_arousal) - 1
                 labels = [pos_label if i > 0 else neg_label for i in avg_arousal]
                 arousal_labels = np.concatenate((arousal_labels, np.array(labels)))
     return arousal_labels
@@ -163,16 +167,16 @@ def get_valence_annotations(prep_dataset, participants_subset, condition, skip_q
     return valence_ann
 
 
-def get_valence_labels(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True, t_classes=None):
+def get_valence_labels(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True, t_classes=None, normalize_labels=False):
     """ All valence user labels """
     if t_classes is None:
         t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
     if condition == 'EO&EC':
-        eo_valence = get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, 'EO', skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes)
-        ec_valence = get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, 'EC', skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes)
+        eo_valence = get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, 'EO', skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes, normalize_labels=normalize_labels)
+        ec_valence = get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, 'EC', skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes, normalize_labels=normalize_labels)
         return np.concatenate((eo_valence, ec_valence))
     else:
-        return get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes)
+        return get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes, normalize_labels=normalize_labels)
 
 
 def get_valence_class_labels(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True, t_classes=None):
@@ -188,7 +192,7 @@ def get_valence_class_labels(prep_dataset, participants_subset, condition, skip_
 
 
 def get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True,
-                                             t_classes=None):
+                                             t_classes=None, normalize_labels=False):
     """ All valence user labels filtered by condition"""
     if t_classes is None:
         t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
@@ -203,12 +207,16 @@ def get_valence_labels_filtered_by_condition(prep_dataset, participants_subset, 
             trial = trials[condition + '/' + trial_class + 'A']
             if not trial['bad_quality'] or skip_qc:
                 avg_valence = trial['features']['avg_x']
+                if normalize_labels:
+                    avg_valence = 2. * (avg_valence - np.min(avg_valence)) / np.ptp(avg_valence) - 1
                 labels = [pos_label if i > 0 else neg_label for i in avg_valence]
                 valence_labels = np.concatenate((valence_labels, np.array(labels)))
 
             trial = trials[condition + '/' + trial_class + 'B']
             if not trial['bad_quality'] or skip_qc:
                 avg_valence = trial['features']['avg_x']
+                if normalize_labels:
+                    avg_valence = 2. * (avg_valence - np.min(avg_valence)) / np.ptp(avg_valence) - 1
                 labels = [pos_label if i > 0 else neg_label for i in avg_valence]
                 valence_labels = np.concatenate((valence_labels, np.array(labels)))
     return valence_labels
@@ -284,20 +292,20 @@ def get_valence_labels_with_neutral(prep_dataset, participants_subset, condition
 
 
 def get_valence_arousal_labels(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True,
-                               t_classes=None):
+                               t_classes=None, normalize_labels=False):
     """ All valence labels """
     if t_classes is None:
         t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
     if condition == 'EO&EC':
-        eo_valence_arousal = get_valence_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, 'EO', skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes)
-        ec_valence_arousal = get_valence_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, 'EC', skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes)
+        eo_valence_arousal = get_valence_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, 'EO', skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes, normalize_labels=normalize_labels)
+        ec_valence_arousal = get_valence_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, 'EC', skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes, normalize_labels=normalize_labels)
         return np.concatenate((eo_valence_arousal, ec_valence_arousal))
     else:
-        return get_valence_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes)
+        return get_valence_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=skip_qc, string_labels=string_labels, t_classes=t_classes, normalize_labels=normalize_labels)
 
 
 def get_valence_arousal_labels_filtered_by_condition(prep_dataset, participants_subset, condition, skip_qc=True, string_labels=True,
-                                                     t_classes=None):
+                                                     t_classes=None, normalize_labels=False):
     """ All VA labels filtered by condition"""
     if t_classes is None:
         t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
@@ -315,6 +323,9 @@ def get_valence_arousal_labels_filtered_by_condition(prep_dataset, participants_
             if not trial['bad_quality'] or skip_qc:
                 avg_valence = trial['features']['avg_x']
                 avg_arousal = trial['features']['avg_y']
+                if normalize_labels:
+                    avg_arousal = 2. * (avg_arousal - np.min(avg_arousal)) / np.ptp(avg_arousal) - 1
+                    avg_valence = 2. * (avg_valence - np.min(avg_valence)) / np.ptp(avg_valence) - 1
                 labels = []
                 for i in range(0, len(avg_arousal)):
                     if avg_arousal[i] > 0 and avg_valence[i] > 0:
@@ -331,6 +342,9 @@ def get_valence_arousal_labels_filtered_by_condition(prep_dataset, participants_
             if not trial['bad_quality'] or skip_qc:
                 avg_valence = trial['features']['avg_x']
                 avg_arousal = trial['features']['avg_y']
+                if normalize_labels:
+                    avg_arousal = 2. * (avg_arousal - np.min(avg_arousal)) / np.ptp(avg_arousal) - 1
+                    avg_valence = 2. * (avg_valence - np.min(avg_valence)) / np.ptp(avg_valence) - 1
                 labels = []
                 for i in range(0, len(avg_arousal)):
                     if avg_arousal[i] > 0 and avg_valence[i] > 0:
@@ -572,3 +586,45 @@ def get_discrete_feature_as_continuous_filtered_by_condition(prep_dataset, parti
                 feat_array = np.full(shape=n_win, fill_value=int(feat), dtype=np.int)
                 features = np.concatenate((features, feat_array))
     return features
+
+
+def get_discrete_feature_as_labels(prep_dataset, participants_subset, condition, feature, skip_qc=True,
+                                       t_classes=None):
+    """ Get all instances of a chosen neuromarker """
+    if t_classes is None:
+        t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
+    if condition == 'EO&EC':
+        eo_feature = get_discrete_feature_as_labels_filtered_by_condition(prep_dataset, participants_subset, 'EO', feature, skip_qc=skip_qc, t_classes=t_classes)
+        ec_feature = get_discrete_feature_as_labels_filtered_by_condition(prep_dataset, participants_subset, 'EC', feature, skip_qc=skip_qc, t_classes=t_classes)
+        return np.concatenate((eo_feature, ec_feature))
+    else:
+        return get_discrete_feature_as_labels_filtered_by_condition(prep_dataset, participants_subset, condition, feature, skip_qc=skip_qc, t_classes=t_classes)
+
+
+def get_discrete_feature_as_labels_filtered_by_condition(prep_dataset, participants_subset, condition, feature, skip_qc=True,
+                                                             t_classes=None):
+    """ Get all instances of a chosen trial feature, i.e. liking or familiarity, filtered by condition"""
+    if t_classes is None:
+        t_classes = ['class_1_', 'class_2_', 'class_3_', 'class_4_']
+    features = np.array([])
+
+    for participant_id in participants_subset:
+        trials = prep_dataset[participant_id]['trials']
+        for trial_class in t_classes:
+            trial = trials[condition + '/' + trial_class + 'A']
+            if not trial['bad_quality'] or skip_qc:
+                feat = trial['features'][feature]
+                n_win = trial['c_windows']
+                label = 0 if int(feat) < 4 else 1
+                feat_array = np.full(shape=n_win, fill_value=label, dtype=np.int)
+                features = np.concatenate((features, feat_array))
+
+            trial = trials[condition + '/' + trial_class + 'B']
+            if not trial['bad_quality'] or skip_qc:
+                feat = trial['features'][feature]
+                n_win = trial['c_windows']
+                label = 0 if int(feat) < 4 else 1
+                feat_array = np.full(shape=n_win, fill_value=label, dtype=np.int)
+                features = np.concatenate((features, feat_array))
+    return features
+
