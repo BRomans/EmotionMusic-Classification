@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 from scipy.fft import fft, fftfreq
+from sklearn.metrics import RocCurveDisplay, auc, confusion_matrix, ConfusionMatrixDisplay
 
 from preprocessing.em_preprocessing import participant_avg_annotation_windows, compute_avg_annotation_windows
 
@@ -69,20 +70,20 @@ def plot_avg_annotations(data):
     fig, axs = plt.subplots(nrows=1, ncols=2)
 
     # scatter plot for A trials
-    x = data['trials']['EO/class_1_A']['annotations']['avg_x']
-    y = data['trials']['EO/class_1_A']['annotations']['avg_y']
+    x = data['trials']['EO/class_1_A']['features']['avg_x']
+    y = data['trials']['EO/class_1_A']['features']['avg_y']
     axs[0].scatter(x, y, c='green', marker='^', label='HAHV')
 
-    x = data['trials']['EO/class_2_A']['annotations']['avg_x']
-    y = data['trials']['EO/class_2_A']['annotations']['avg_y']
+    x = data['trials']['EO/class_2_A']['features']['avg_x']
+    y = data['trials']['EO/class_2_A']['features']['avg_y']
     axs[0].scatter(x, y, c='cyan', marker='>', label='LAHV')
 
-    x = data['trials']['EO/class_3_A']['annotations']['avg_x']
-    y = data['trials']['EO/class_3_A']['annotations']['avg_y']
+    x = data['trials']['EO/class_3_A']['features']['avg_x']
+    y = data['trials']['EO/class_3_A']['features']['avg_y']
     axs[0].scatter(x, y, c='blue', marker='v', label='LALV')
 
-    x = data['trials']['EO/class_4_A']['annotations']['avg_x']
-    y = data['trials']['EO/class_4_A']['annotations']['avg_y']
+    x = data['trials']['EO/class_4_A']['features']['avg_x']
+    y = data['trials']['EO/class_4_A']['features']['avg_y']
     axs[0].scatter(x, y, c='orange', marker='<', label='HALV')
 
     axs[0].legend(loc='upper left')
@@ -94,20 +95,20 @@ def plot_avg_annotations(data):
     axs[0].grid(True)
 
     # scatter plot for B trials
-    x = data['trials']['EO/class_1_B']['annotations']['avg_x']
-    y = data['trials']['EO/class_1_B']['annotations']['avg_y']
+    x = data['trials']['EO/class_1_B']['features']['avg_x']
+    y = data['trials']['EO/class_1_B']['features']['avg_y']
     axs[1].scatter(x, y, c='green', marker='^', label='HAHV')
 
-    x = data['trials']['EO/class_2_B']['annotations']['avg_x']
-    y = data['trials']['EO/class_2_B']['annotations']['avg_y']
+    x = data['trials']['EO/class_2_B']['features']['avg_x']
+    y = data['trials']['EO/class_2_B']['features']['avg_y']
     axs[1].scatter(x, y, c='cyan', marker='>', label='LAHV')
 
-    x = data['trials']['EO/class_3_B']['annotations']['avg_x']
-    y = data['trials']['EO/class_3_B']['annotations']['avg_y']
+    x = data['trials']['EO/class_3_B']['features']['avg_x']
+    y = data['trials']['EO/class_3_B']['features']['avg_y']
     axs[1].scatter(x, y, c='blue', marker='v', label='LALV')
 
-    x = data['trials']['EO/class_4_B']['annotations']['avg_x']
-    y = data['trials']['EO/class_4_B']['annotations']['avg_y']
+    x = data['trials']['EO/class_4_B']['features']['avg_x']
+    y = data['trials']['EO/class_4_B']['features']['avg_y']
     axs[1].scatter(x, y, c='orange', marker='<', label='HALV')
 
     axs[1].legend(loc='upper left')
@@ -135,29 +136,29 @@ def plot_avg_annotations_all_participants(dataset):
     x = []
     y = []
     for participant_id in dataset:
-        x.append(dataset[participant_id]['trials']['EO/class_1_A']['annotations']['avg_x'])
-        y.append(dataset[participant_id]['trials']['EO/class_1_A']['annotations']['avg_y'])
+        x.append(dataset[participant_id]['trials']['EO/class_1_A']['features']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_1_A']['features']['avg_y'])
     axs[0].scatter(x, y, c='green', marker='^', label='HAHV')
 
     x = []
     y = []
     for participant_id in dataset:
-        x.append(dataset[participant_id]['trials']['EO/class_2_A']['annotations']['avg_x'])
-        y.append(dataset[participant_id]['trials']['EO/class_2_A']['annotations']['avg_y'])
+        x.append(dataset[participant_id]['trials']['EO/class_2_A']['features']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_2_A']['features']['avg_y'])
     axs[0].scatter(x, y, c='cyan', marker='>', label='LAHV')
 
     x = []
     y = []
     for participant_id in dataset:
-        x.append(dataset[participant_id]['trials']['EO/class_3_A']['annotations']['avg_x'])
-        y.append(dataset[participant_id]['trials']['EO/class_3_A']['annotations']['avg_y'])
+        x.append(dataset[participant_id]['trials']['EO/class_3_A']['features']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_3_A']['features']['avg_y'])
     axs[0].scatter(x, y, c='blue', marker='v', label='LALV')
 
     x = []
     y = []
     for participant_id in dataset:
-        x.append(dataset[participant_id]['trials']['EO/class_4_A']['annotations']['avg_x'])
-        y.append(dataset[participant_id]['trials']['EO/class_4_A']['annotations']['avg_y'])
+        x.append(dataset[participant_id]['trials']['EO/class_4_A']['features']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_4_A']['features']['avg_y'])
     axs[0].scatter(x, y, c='orange', marker='<', label='HALV')
 
     axs[0].legend(loc='upper left')
@@ -174,29 +175,29 @@ def plot_avg_annotations_all_participants(dataset):
     x = []
     y = []
     for participant_id in dataset:
-        x.append(dataset[participant_id]['trials']['EO/class_1_B']['annotations']['avg_x'])
-        y.append(dataset[participant_id]['trials']['EO/class_1_B']['annotations']['avg_y'])
+        x.append(dataset[participant_id]['trials']['EO/class_1_B']['features']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_1_B']['features']['avg_y'])
     axs[1].scatter(x, y, c='green', marker='^', label='HAHV')
 
     x = []
     y = []
     for participant_id in dataset:
-        x.append(dataset[participant_id]['trials']['EO/class_2_B']['annotations']['avg_x'])
-        y.append(dataset[participant_id]['trials']['EO/class_2_B']['annotations']['avg_y'])
+        x.append(dataset[participant_id]['trials']['EO/class_2_B']['features']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_2_B']['features']['avg_y'])
     axs[1].scatter(x, y, c='cyan', marker='>', label='LAHV')
 
     x = []
     y = []
     for participant_id in dataset:
-        x.append(dataset[participant_id]['trials']['EO/class_3_B']['annotations']['avg_x'])
-        y.append(dataset[participant_id]['trials']['EO/class_3_B']['annotations']['avg_y'])
+        x.append(dataset[participant_id]['trials']['EO/class_3_B']['features']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_3_B']['features']['avg_y'])
     axs[1].scatter(x, y, c='blue', marker='v', label='LALV')
 
     x = []
     y = []
     for participant_id in dataset:
-        x.append(dataset[participant_id]['trials']['EO/class_4_B']['annotations']['avg_x'])
-        y.append(dataset[participant_id]['trials']['EO/class_4_B']['annotations']['avg_y'])
+        x.append(dataset[participant_id]['trials']['EO/class_4_B']['features']['avg_x'])
+        y.append(dataset[participant_id]['trials']['EO/class_4_B']['features']['avg_y'])
     axs[1].scatter(x, y, c='orange', marker='<', label='HALV')
 
     axs[1].legend(loc='upper left')
@@ -301,4 +302,104 @@ def plot_linear_regression(x_test, y_test, y_pred, d_label, i_label):
     plt.yticks()
 
     plt.tight_layout()
+    plt.show()
+
+
+def plot_roc_curve(fpr, tpr, roc_auc=0, label=""):
+    plt.plot(fpr, tpr, color='orange', label='ROC curve %.2f' % roc_auc)
+    plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title(label + ' Receiver Operating Characteristic (ROC) Curve')
+    plt.legend()
+    plt.show()
+
+
+def plot_kfold_roc_curve(classifier, X, y, cv, pos_label, title=''):
+    tprs = []
+    aucs = []
+    mean_fpr = np.linspace(0, 1, 100)
+
+    fig, ax = plt.subplots()
+    for i, (train, test) in enumerate(cv.split(X, y)):
+        classifier.fit(X[train], y[train])
+        viz = RocCurveDisplay.from_estimator(
+            classifier,
+            X[test],
+            y[test],
+            name="ROC fold {}".format(i),
+            alpha=0.3,
+            lw=1,
+            ax=ax,
+            pos_label=pos_label
+        )
+        interp_tpr = np.interp(mean_fpr, viz.fpr, viz.tpr)
+        interp_tpr[0] = 0.0
+        tprs.append(interp_tpr)
+        aucs.append(viz.roc_auc)
+
+    ax.plot([0, 1], [0, 1], linestyle="--", lw=2, color="r", label="Chance", alpha=0.8)
+
+    mean_tpr = np.mean(tprs, axis=0)
+    mean_tpr[-1] = 1.0
+    mean_auc = auc(mean_fpr, mean_tpr)
+    std_auc = np.std(aucs)
+    ax.plot(
+        mean_fpr,
+        mean_tpr,
+        color="b",
+        label=r"Mean ROC (AUC = %0.2f $\pm$ %0.2f)" % (mean_auc, std_auc),
+        lw=2,
+        alpha=0.8,
+    )
+
+    std_tpr = np.std(tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    ax.fill_between(
+        mean_fpr,
+        tprs_lower,
+        tprs_upper,
+        color="grey",
+        alpha=0.2,
+        label=r"$\pm$ 1 std. dev.",
+    )
+
+    ax.set(
+        xlim=[-0.05, 1.05],
+        ylim=[-0.05, 1.05],
+        title="Receiver operating characteristic - " + title,
+    )
+    ax.legend(loc="lower right")
+    plt.show()
+
+
+def plot_labels_distribution(participant, arousal_labels, valence_labels, va_labels):
+    plt.rcParams["figure.figsize"] = [15, 4]
+    fig, axs = plt.subplots(nrows=1, ncols=3)
+
+    n, bins, patches = axs[0].hist(arousal_labels, color='orange')
+    axs[0].set_title("Distribution of labels for Arousal "  + participant)
+    axs[0].set_xlabel('Classes')
+    axs[0].set_ylabel('Samples')
+
+    n, bins, patches = axs[1].hist(valence_labels, color='green')
+    axs[1].set_title("Distribution of labels for Valence " + participant)
+    axs[1].set_xlabel('Classes')
+    axs[1].set_ylabel('Samples')
+
+    n, bins, patches = axs[2].hist(va_labels, color='red')
+    axs[2].set_title("Distribution of labels for VA" + participant)
+    axs[2].set_xlabel('Classes')
+    axs[2].set_ylabel('Samples')
+    plt.show()
+
+
+def plot_confusion_matrix_for_classifier(clf, X_test, y_test, labels):
+    predictions = clf.predict(X_test)
+    cm = confusion_matrix(y_test, predictions, labels=labels)
+    tn, fp, fn, tp = confusion_matrix(y_test, predictions,  labels=labels).ravel()
+    print("TN",tn, "FP", fp, "FN", fn, "TP", tp)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
+    disp.plot()
     plt.show()
