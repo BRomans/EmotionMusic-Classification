@@ -628,3 +628,11 @@ def get_discrete_feature_as_labels_filtered_by_condition(prep_dataset, participa
                 features = np.concatenate((features, feat_array))
     return features
 
+
+def majority_chance_level(labels, classes):
+    c1_count = np.count_nonzero(labels == classes[0])
+    c2_count = np.count_nonzero(labels == classes[1])
+    if (c1_count >= c2_count):
+        return c1_count / (c1_count + c2_count)
+    else:
+        return c2_count / (c1_count + c2_count)
