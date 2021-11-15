@@ -403,3 +403,123 @@ def plot_confusion_matrix_for_classifier(clf, X_test, y_test, labels):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
     disp.plot()
     plt.show()
+
+
+def plot_accuracy_vs_mcc(df, sort_criterion, color_acc, color_mcc, color_chance, title, path=""):
+    # df.set_index('Participant', inplace=True)
+    bar_width = 0.3
+    df.sort_values(by=[sort_criterion], inplace=True, ascending=False)
+    x = np.arange(len(df.index))
+    y_val = 'Test Accuracy'
+    ylim = (-0.5, 1)
+    fig, ax = plt.subplots()
+    ax.bar(x=x - bar_width, height=df["MCC"], align='center', alpha=0.5, width=bar_width, capsize=10, color=color_mcc,
+           label='Test MCC')
+    ax.bar(x=x, height=df["Test Accuracy"], align='center', alpha=0.5, width=bar_width, capsize=10, color=color_acc,
+           label='Test Accuracy')
+    ax.bar(x=x + bar_width, height=df["Chance Level"], align='center', alpha=0.6, width=bar_width, capsize=10,
+           color=color_chance, label='Default Guessing')
+    ax.legend()
+    ax.set_ylabel(y_val)
+    ax.set_xticks(x)
+    ax.set_xticklabels(df['Participant'])
+    ax.set_ylim(ylim)
+    ax.set_title(title + ', sorted by ' + sort_criterion)
+    ax.yaxis.grid(True)
+    # Save the figure and show
+    plt.tight_layout()
+    plt.xticks(rotation=75)
+    plt.savefig(path)
+    plt.show()
+
+
+def plot_cv_accuracy_vs_mcc(df, sort_criterion, color_acc, color_mcc, color_chance, title, path=""):
+    # df.set_index('Participant', inplace=True)
+    bar_width = 0.3
+    df.sort_values(by=[sort_criterion], inplace=True, ascending=False)
+    x = np.arange(len(df.index))
+    y_val = 'CV Accuracy'
+    ylim = (-0.5, 1)
+    fig, ax = plt.subplots()
+    error_kw = dict(ecolor=color_mcc, lw=1, capsize=3, capthick=1)
+    ax.bar(x=x - bar_width, height=df["CV MCC"], yerr=df["CV MCC Std"], error_kw=error_kw, align='center', alpha=0.5,
+           width=bar_width, capsize=10, color=color_mcc, label='Test MCC')
+    error_kw = dict(ecolor=color_acc, lw=1, capsize=3, capthick=1)
+    ax.bar(x=x, height=df["Mean"], yerr=df["Std"], error_kw=error_kw, align='center', alpha=0.5, width=bar_width,
+           capsize=10, color=color_acc, label='Test Accuracy')
+    ax.bar(x=x + bar_width, height=df["Chance Level"], align='center', alpha=0.6, width=bar_width, capsize=10,
+           color=color_chance, label='Default Guessing')
+    ax.legend()
+    ax.set_ylabel(y_val)
+    ax.set_xticks(x)
+    ax.set_xticklabels(df['Participant'])
+    ax.set_ylim(ylim)
+    ax.set_title(title + ', sorted by ' + sort_criterion)
+    ax.yaxis.grid(True)
+    # Save the figure and show
+    plt.tight_layout()
+    plt.xticks(rotation=75)
+    plt.savefig(path)
+    plt.show()
+
+
+def plot_experiment_recap(df, path=""):
+    # df.set_index('Participant', inplace=True)
+    # df.sort_values(by=[sort_criterion], inplace=True, ascending=False)
+    x = np.arange(len(df.index))
+    y_val = 'Test Accuracy'
+    ylim = (-0.25, 1)
+    fig, ax = plt.subplots()
+    error_kw = dict(ecolor='red', lw=1, capsize=3, capthick=1)
+    ax.bar(x=x - 0.2, height=df["Avg MCC"], align='center', yerr=df["Avg MCC Std"], error_kw=error_kw, alpha=0.5,
+           width=0.2, capsize=10, color='red', label='Avg MCC')
+    error_kw = dict(ecolor='blue', lw=1, capsize=3, capthick=1)
+    ax.bar(x=x, height=df["Avg Test Accuracy"], yerr=df["Avg Test Accuracy Std"], error_kw=error_kw, align='center',
+           alpha=0.5, width=0.2, capsize=10, color='blue', label='Avg Test Accuracy')
+    error_kw = dict(ecolor='blue', lw=1, capsize=3, capthick=1)
+    ax.bar(x=x + 0.2, height=df["Avg Chance Level"], yerr=df["Avg Chance Level Std"], error_kw=error_kw, align='center',
+           alpha=0.3, width=0.2, capsize=10, color='blue', label='Default Guessing')
+    ax.legend()
+    ax.set_ylabel(y_val)
+    ax.set_xticks(x)
+    ax.set_xticklabels(df['Classifiers'])
+    ax.set_ylim(ylim)
+    ax.set_title("Test Accuracy of optimized classifiers vs default guessing")
+    ax.yaxis.grid(True)
+    # Save the figure and show
+    plt.tight_layout()
+    plt.xticks(rotation=75)
+    plt.savefig(path)
+    plt.show()
+
+
+def plot_cv_recap(df, path=""):
+    # df.set_index('Participant', inplace=True)
+    # df.sort_values(by=[sort_criterion], inplace=True, ascending=False)
+    x = np.arange(len(df.index))
+    y_val = 'CV Accuracy'
+    ylim = (-0.25, 1)
+    fig, ax = plt.subplots()
+    error_kw = dict(ecolor='red', lw=1, capsize=3, capthick=1)
+    ax.bar(x=x - 0.2, height=df["Avg CV MCC"], align='center', yerr=df["Avg CV MCC Std"], error_kw=error_kw, alpha=0.5,
+           width=0.2, capsize=10, color='red', label='Avg CV MCC')
+    error_kw = dict(ecolor='purple', lw=1, capsize=3, capthick=1)
+    ax.bar(x=x, height=df["Avg CV Score"], yerr=df["Avg CV Std"], align='center', error_kw=error_kw, alpha=0.5,
+           width=0.2, capsize=10, color='purple', label='Avg CV Accuracy')
+    error_kw = dict(ecolor='blue', lw=1, capsize=3, capthick=1)
+    ax.bar(x=x + 0.2, height=df["Avg Chance Level"], yerr=df["Avg Chance Level Std"], error_kw=error_kw, align='center',
+           alpha=0.3, width=0.2, capsize=10, color='blue', label='Default Guessing')
+    ax.legend()
+    ax.set_ylabel(y_val)
+    ax.set_xticks(x)
+    ax.set_xticklabels(df['Classifiers'])
+    ax.set_ylim(ylim)
+    ax.set_title("Cross-Validated Accuracy of optimized classifiers vs default guessing")
+    ax.yaxis.grid(True)
+    # Save the figure and show
+    plt.tight_layout()
+    plt.xticks(rotation=75)
+    plt.savefig(path)
+    plt.show()
+
+
