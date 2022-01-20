@@ -16,6 +16,8 @@ from classification.em_features_aggregator import get_arousal_labels, get_valenc
     get_arousal_class_labels, get_valence_class_labels, get_valence_arousal_class_labels, \
     get_discrete_feature_as_labels, get_neuromarker_1D, get_neuromarker_2D, get_continuous_eeg_feature, \
     get_discrete_feature_as_continuous, majority_chance_level
+from classification.em_grid_search import retrieve_best_parameters_grid_search_svm, \
+    retrieve_best_parameters_grid_search_mlp
 from utils.em_data_loader import load_dataset
 from utils.em_plotting import plot_labels_distribution, plot_kfold_roc_curve, plot_confusion_matrix_for_classifier
 
@@ -24,13 +26,16 @@ preprocessed_folder = '../data/preprocessed_' + time_window
 prep_dataset = load_dataset(preprocessed_folder)
 participants = prep_dataset.keys()
 
-condition = 'EO&EC'
+# condition = 'EO&EC'
 user_labels = False
 plotting = True
 liking_class = False
 normalize_labels = False
+grid_optimization = False
 n_top_features = 5
 cv = StratifiedKFold(5, shuffle=False)
+mcc_scoring = make_scorer(matthews_corrcoef)
+
 template_table = {
     'Test Participant': [],
     'Condition': condition,
@@ -45,18 +50,26 @@ template_table = {
     'Min Train': [],
     'Test Accuracy': [],
     'Test F1 Score': [],
-    'Test MCC': [],
+    'MCC': [],
+    'MCC Std': [],
+    'CV MCC': [],
     'Train Scores': [],
     'Avg Chance Level': [],
+    'Avg Chance Level Std': [],
     'Avg Train Score': [],
     'Avg Train Std': [],
     'Max Train Score': [],
     'Min Train Score': [],
-    'Avg Test Score': [],
     'Max Test Score': [],
     'Min Test Score': [],
     'Avg F1 Test Score': [],
-    'Avg MCC Test': []
+    'Avg MCC Test': [],
+    'Avg Test Accuracy': [],
+    'Avg Test Accuracy Std': [],
+    'Avg CV F1 Score': [],
+    'Avg CV MCC': [],
+    'Avg CV MCC Std': []
+
 }
 
 arousal_svm_table = copy.deepcopy(template_table)
@@ -345,22 +358,36 @@ for participant in participant_keys:
 
     # SVM Cross-validation
     # SVM parameters
-    C = 0.0001
+    C = 1000
     kernel = 'rbf'
-
+    gamma = 0.1
+    parameter_space = {
+        'C': [0.1, 1, 10, 1000],
+        'gamma': [10, 0.1, 0.01, 0.0001],
+        'kernel': ['rbf']
+    }
     # Arousal classifier
 
     # Calculate class weights beforehand
     df_a = pd.DataFrame(y_a)
     a_weights = df_a.value_counts(normalize=True)
     weights = {'HA': a_weights['HA'], 'LA': a_weights['LA']}
+    if grid_optimization:
+        best_params = retrieve_best_parameters_grid_search_svm(parameter_space, X_a, y_a, weights,
+                                                               d_function='ovo')
+        kernel = best_params['kernel']
+        C = best_params['C']
+        gamma = best_params['gamma']
+    arousal_clf = svm.SVC(kernel=kernel, probability=True, C=C, class_weight=weights, gamma=gamma)
 
-    arousal_clf = svm.SVC(kernel=kernel, probability=True, C=C, class_weight=weights)
+    scores = cross_val_score(arousal_clf, X_a, y_a, cv=cv, scoring='balanced_accuracy')
+    cv_mcc = cross_val_score(arousal_clf, X_a, y_a, cv=cv, scoring=mcc_scoring)
+    cv_f1 = cross_val_score(arousal_clf, X_a, y_a, cv=cv, scoring='f1_weighted')
+
     arousal_clf.fit(X_a, y_a)
-    scores = cross_val_score(arousal_clf, X_a, y_a, cv=cv)
     print(
         "Arousal SVM: %0.2f cross-validated accuracy with a standard deviation of %0.2f, Max of %0.2f and Min of %0.2f " % (
-        np.nanmean(scores), np.nanstd(scores), max(scores), min(scores)))
+            np.nanmean(scores), np.nanstd(scores), max(scores), min(scores)))
     y_pred = arousal_clf.predict(test_X_a)
     accuracy = accuracy_score(test_y_a, y_pred)
     f1 = f1_score(test_y_a, y_pred, average='weighted')
@@ -377,14 +404,15 @@ for participant in participant_keys:
     arousal_svm_table['Algorithme'].append('SVM')
     arousal_svm_table['Features'].append('')
     arousal_svm_table['Chance Level'].append(chance_arousal)
-    arousal_svm_table['Train Mean Score'].append(round(np.nanmean(scores), 2))
+    arousal_svm_table['Train Mean Score'].append(np.round(np.nanmean(scores), 2))
     arousal_svm_table['Train Std'].append(np.nanstd(scores))
-    arousal_svm_table['Max Train'].append(round(max(scores), 2))
-    arousal_svm_table['Min Train'].append(round(min(scores), 2))
+    arousal_svm_table['Max Train'].append(np.round(max(scores), 2))
+    arousal_svm_table['Min Train'].append(np.round(min(scores), 2))
     arousal_svm_table['Train Scores'].append(np.round(scores, 2))
-    arousal_svm_table['Test Accuracy'].append(round(accuracy, 2))
-    arousal_svm_table['Test F1 Score'].append(round(f1, 2))
-    arousal_svm_table['Test MCC'].append(round(mcc, 2))
+    arousal_svm_table['Test Accuracy'].append(np.round(accuracy, 2))
+    arousal_svm_table['Test F1 Score'].append(np.round(f1, 2))
+    arousal_svm_table['MCC'].append(np.round(mcc, 2))
+    arousal_svm_table['CV MCC'].append(np.round(cv_mcc, 2))
 
     # Valence classifier
 
@@ -392,13 +420,24 @@ for participant in participant_keys:
     df_v = pd.DataFrame(y_v)
     v_weights = df_v.value_counts(normalize=True)
     weights = {'HV': v_weights['HV'], 'LV': v_weights['LV']}
+    if grid_optimization:
+        best_params = retrieve_best_parameters_grid_search_svm(parameter_space, X_a, y_a, weights,
+                                                               d_function='ovo')
+        kernel = best_params['kernel']
+        C = best_params['C']
+        gamma = best_params['gamma']
 
     valence_clf = svm.SVC(kernel=kernel, probability=True, C=C, class_weight=weights)
+
+    scores = cross_val_score(valence_clf, X_v, y_v, cv=cv, scoring='balanced_accuracy')
+    cv_mcc = cross_val_score(valence_clf, X_v, y_v, cv=cv, scoring=mcc_scoring)
+    cv_f1 = cross_val_score(valence_clf, X_v, y_v, cv=cv, scoring='f1_weighted')
+
     valence_clf.fit(X_v, y_v)
-    scores = cross_val_score(valence_clf, X_v, y_v, cv=cv)
+
     print(
         "Valence SVM: %0.2f cross-validated accuracy with a standard deviation of %0.2f, Max of %0.2f and Min of %0.2f " % (
-        np.nanmean(scores), np.nanstd(scores), max(scores), min(scores)))
+            np.nanmean(scores), np.nanstd(scores), max(scores), min(scores)))
     y_pred = valence_clf.predict(test_X_v)
     accuracy = accuracy_score(test_y_v, y_pred)
     f1 = f1_score(test_y_v, y_pred, average='weighted')
@@ -414,34 +453,55 @@ for participant in participant_keys:
     valence_svm_table['Algorithme'].append('SVM')
     valence_svm_table['Features'].append('')
     valence_svm_table['Chance Level'].append(chance_valence)
-    valence_svm_table['Train Mean Score'].append(round(np.nanmean(scores), 2))
+    valence_svm_table['Train Mean Score'].append(np.round(np.nanmean(scores), 2))
     valence_svm_table['Train Std'].append(np.nanstd(scores))
-    valence_svm_table['Max Train'].append(round(max(scores), 2))
-    valence_svm_table['Min Train'].append(round(min(scores), 2))
+    valence_svm_table['Max Train'].append(np.round(max(scores), 2))
+    valence_svm_table['Min Train'].append(np.round(min(scores), 2))
     valence_svm_table['Train Scores'].append(np.round(scores, 2))
-    valence_svm_table['Test Accuracy'].append(round(accuracy, 2))
-    valence_svm_table['Test F1 Score'].append(round(f1, 2))
-    valence_svm_table['Test MCC'].append(round(mcc, 2))
-
+    valence_svm_table['Test Accuracy'].append(np.round(accuracy, 2))
+    valence_svm_table['Test F1 Score'].append(np.round(f1, 2))
+    valence_svm_table['MCC'].append(np.round(mcc, 2))
+    valence_svm_table['CV MCC'].append(np.round(cv_mcc, 2))
 
     # MLP Classifiers
 
     # MLP hyperparameters
     solver = 'lbfgs'
-    hidden_layer_sizes = (4, 4)
-    learning_rate = 'adaptive'
-    alpha = 0.0001
     activation = 'relu'
+    learning_rate = 'adaptive'
+    hidden_layer_sizes = (4, 4)
+    alpha = 0.0001
+
     max_iter = 10000
+    parameter_space = {
+        'hidden_layer_sizes': [(5, 2,), (4, 4,), (10, 4, 2)],
+        'activation': ['relu'],
+        'solver': ['lbfgs'],
+        'alpha': [0.00001, 0.01, 1],
+        'learning_rate': ['adaptive'],
+    }
 
     # Arousal classifier
+    alpha = 10
+    hidden_layer_sizes = (10,)
+    if grid_optimization:
+        best_params = retrieve_best_parameters_grid_search_mlp(parameter_space, X_a, y_a, max_iter=10000)
+        hidden_layer_sizes = best_params['hidden_layer_sizes']
+        learning_rate = best_params['learning_rate']
+        alpha = best_params['alpha']
+        activation = best_params['activation']
     arousal_clf = MLPClassifier(solver=solver, alpha=alpha, activation=activation, learning_rate=learning_rate,
                                 hidden_layer_sizes=hidden_layer_sizes, random_state=1, max_iter=max_iter)
+
+    scores = cross_val_score(arousal_clf, X_a, y_a, cv=cv, scoring='balanced_accuracy')
+    cv_mcc = cross_val_score(arousal_clf, X_a, y_a, cv=cv, scoring=mcc_scoring)
+    cv_f1 = cross_val_score(arousal_clf, X_a, y_a, cv=cv, scoring='f1_weighted')
+
     arousal_clf.fit(X_a, y_a)
-    scores = cross_val_score(arousal_clf, X_a, y_a, cv=cv)
+
     print(
         "Arousal MLP: %0.2f cross-validated accuracy with a standard deviation of %0.2f, Max of %0.2f and Min of %0.2f " % (
-        scores.mean(), scores.std(), max(scores), min(scores)))
+            scores.mean(), scores.std(), max(scores), min(scores)))
     y_pred = arousal_clf.predict(test_X_a)
     accuracy = accuracy_score(test_y_a, y_pred)
     f1 = f1_score(test_y_a, y_pred, average='weighted')
@@ -457,23 +517,37 @@ for participant in participant_keys:
     arousal_mlp_table['Algorithme'].append('MLP')
     arousal_mlp_table['Features'].append('')
     arousal_mlp_table['Chance Level'].append(chance_arousal)
-    arousal_mlp_table['Train Mean Score'].append(round(np.nanmean(scores), 2))
+    arousal_mlp_table['Train Mean Score'].append(np.round(np.nanmean(scores), 2))
     arousal_mlp_table['Train Std'].append(np.std(scores))
-    arousal_mlp_table['Max Train'].append(round(max(scores), 2))
-    arousal_mlp_table['Min Train'].append(round(min(scores), 2))
+    arousal_mlp_table['Max Train'].append(np.round(max(scores), 2))
+    arousal_mlp_table['Min Train'].append(np.round(min(scores), 2))
     arousal_mlp_table['Train Scores'].append(np.round(scores, 2))
-    arousal_mlp_table['Test Accuracy'].append(round(accuracy, 2))
-    arousal_mlp_table['Test F1 Score'].append(round(f1, 2))
-    arousal_mlp_table['Test MCC'].append(round(mcc, 2))
+    arousal_mlp_table['Test Accuracy'].append(np.round(accuracy, 2))
+    arousal_mlp_table['Test F1 Score'].append(np.round(f1, 2))
+    arousal_mlp_table['MCC'].append(np.round(mcc, 2))
+    arousal_mlp_table['CV MCC'].append(np.round(cv_mcc, 2))
 
     # Valence classifier
+    alpha = 10
+    hidden_layer_sizes = (10, 4, 2)
+
+    if grid_optimization:
+        best_params = retrieve_best_parameters_grid_search_mlp(parameter_space, X_v, y_v, max_iter=10000)
+        hidden_layer_sizes = best_params['hidden_layer_sizes']
+        learning_rate = best_params['learning_rate']
+        alpha = best_params['alpha']
+        activation = best_params['activation']
     valence_clf = MLPClassifier(solver=solver, alpha=alpha, activation=activation, learning_rate=learning_rate,
                                 hidden_layer_sizes=hidden_layer_sizes, random_state=1, max_iter=max_iter)
+
+    scores = cross_val_score(valence_clf, X_v, y_v, cv=cv, scoring='balanced_accuracy')
+    cv_mcc = cross_val_score(valence_clf, X_v, y_v, cv=cv, scoring=mcc_scoring)
+    cv_f1 = cross_val_score(valence_clf, X_v, y_v, cv=cv, scoring='f1_weighted')
+
     valence_clf.fit(X_v, y_v)
-    scores = cross_val_score(valence_clf, X_v, y_v, cv=cv)
     print(
         "Valence MLP: %0.2f cross-validated accuracy with a standard deviation of %0.2f, Max of %0.2f and Min of %0.2f " % (
-        np.nanmean(scores), np.nanstd(scores), max(scores), min(scores)))
+            np.nanmean(scores), np.nanstd(scores), max(scores), min(scores)))
     y_pred = valence_clf.predict(test_X_v)
     accuracy = accuracy_score(test_y_v, y_pred)
     f1 = f1_score(test_y_v, y_pred, average='weighted')
@@ -489,65 +563,84 @@ for participant in participant_keys:
     valence_mlp_table['Algorithme'].append('MLP')
     valence_mlp_table['Features'].append('')
     valence_mlp_table['Chance Level'].append(chance_valence)
-    valence_mlp_table['Train Mean Score'].append(round(np.nanmean(scores), 2))
+    valence_mlp_table['Train Mean Score'].append(np.round(np.nanmean(scores), 2))
     valence_mlp_table['Train Std'].append(np.nanstd(scores))
-    valence_mlp_table['Max Train'].append(round(max(scores), 2))
-    valence_mlp_table['Min Train'].append(round(min(scores), 2))
+    valence_mlp_table['Max Train'].append(np.round(max(scores), 2))
+    valence_mlp_table['Min Train'].append(np.round(min(scores), 2))
     valence_mlp_table['Train Scores'].append(np.round(scores, 2))
-    valence_mlp_table['Test Accuracy'].append(round(accuracy, 2))
-    valence_mlp_table['Test F1 Score'].append(round(f1, 2))
-    valence_mlp_table['Test MCC'].append(round(mcc, 2))
-
+    valence_mlp_table['Test Accuracy'].append(np.round(accuracy, 2))
+    valence_mlp_table['Test F1 Score'].append(np.round(f1, 2))
+    valence_mlp_table['MCC'].append(np.round(mcc, 2))
+    valence_mlp_table['CV MCC'].append(np.round(cv_mcc, 2))
 
     participant_toc_fwd = time()
     print(f"Participant processed in {participant_toc_fwd - participant_tic_fwd:.3f}s")
     print('------------------------------------------------------------------')
 
 # Computing results for the .csv tables
-arousal_svm_table['Avg Test Score'] = np.mean(arousal_svm_table['Test Accuracy'])
+arousal_svm_table['Avg Test Accuracy'] = np.nanmean(arousal_svm_table['Test Accuracy'])
+arousal_svm_table['Avg Test Accuracy Std'] = np.nanmean(arousal_svm_table['Test Accuracy Std'])
 arousal_svm_table['Max Test Score'] = max(arousal_svm_table['Test Accuracy'])
 arousal_svm_table['Min Test Score'] = min(arousal_svm_table['Test Accuracy'])
-arousal_svm_table['Avg F1 Test Score'] = np.mean(arousal_svm_table['Test F1 Score'])
-arousal_svm_table['Avg Train Score'] = np.mean(arousal_svm_table['Train Mean Score'])
+arousal_svm_table['Avg F1 Test Score'] = np.nanmean(arousal_svm_table['Test F1 Score'])
+arousal_svm_table['Avg Train Score'] = np.nanmean(arousal_svm_table['Train Mean Score'])
 arousal_svm_table['Max Train Score'] = max(arousal_svm_table['Train Mean Score'])
 arousal_svm_table['Min Train Score'] = min(arousal_svm_table['Train Mean Score'])
-arousal_svm_table['Avg Train Std'] = np.mean(arousal_svm_table['Train Std'])
-arousal_svm_table['Avg Chance Level'] = np.mean(arousal_svm_table['Chance Level'])
-arousal_svm_table['Avg MCC Test'] = np.mean(arousal_svm_table['Test MCC'])
+arousal_svm_table['Avg Train Std'] = np.nanmean(arousal_svm_table['Train Std'])
+arousal_svm_table['Avg Chance Level'] = np.nanmean(arousal_svm_table['Chance Level'])
+arousal_svm_table['Avg Chance Level Std'] = np.nanstd(arousal_svm_table['Chance Level'])
+arousal_svm_table['Avg MCC'] = np.nanmean(arousal_svm_table['MCC'])
+arousal_svm_table['Avg MCC Std'] = np.nanstd(arousal_svm_table['MCC'])
+arousal_svm_table['Avg CV MCC'] = np.nanmean(arousal_svm_table['CV MCC'])
+arousal_svm_table['Avg CV MCC Std'] = np.nanstd(arousal_svm_table['CV MCC'])
 
-valence_svm_table['Avg Test Score'] = np.mean(valence_svm_table['Test Accuracy'])
+valence_svm_table['Avg Test Accuracy'] = np.nanmean(valence_svm_table['Test Accuracy'])
+valence_svm_table['Avg Test Accuracy Std'] = np.nanmean(valence_svm_table['Test Accuracy Std'])
 valence_svm_table['Max Test Score'] = max(valence_svm_table['Test Accuracy'])
 valence_svm_table['Min Test Score'] = min(valence_svm_table['Test Accuracy'])
-valence_svm_table['Avg F1 Test Score'] = np.mean(valence_svm_table['Test F1 Score'])
-valence_svm_table['Avg Train Score'] = np.mean(valence_svm_table['Train Mean Score'])
+valence_svm_table['Avg F1 Test Score'] = np.nanmean(valence_svm_table['Test F1 Score'])
+valence_svm_table['Avg Train Score'] = np.nanmean(valence_svm_table['Train Mean Score'])
 valence_svm_table['Max Train Score'] = max(valence_svm_table['Train Mean Score'])
 valence_svm_table['Min Train Score'] = min(valence_svm_table['Train Mean Score'])
-valence_svm_table['Avg Train Std'] = np.mean(valence_svm_table['Train Std'])
-valence_svm_table['Avg Chance Level'] = np.mean(valence_svm_table['Chance Level'])
-valence_svm_table['Avg MCC Test'] = np.mean(valence_svm_table['Test MCC'])
+valence_svm_table['Avg Train Std'] = np.nanmean(valence_svm_table['Train Std'])
+valence_svm_table['Avg Chance Level'] = np.nanmean(valence_svm_table['Chance Level'])
+valence_svm_table['Avg Chance Level Std'] = np.nanstd(valence_svm_table['Chance Level'])
+valence_svm_table['Avg MCC'] = np.nanmean(valence_svm_table['MCC'])
+valence_svm_table['Avg MCC Std'] = np.nanstd(valence_svm_table['MCC'])
+valence_svm_table['Avg CV MCC'] = np.nanmean(valence_svm_table['CV MCC'])
+valence_svm_table['Avg CV MCC Std'] = np.nanstd(valence_svm_table['CV MCC'])
 
-arousal_mlp_table['Avg Test Score'] = np.mean(arousal_mlp_table['Test Accuracy'])
+arousal_mlp_table['Avg Test Accuracy'] = np.nanmean(arousal_mlp_table['Test Accuracy'])
+arousal_mlp_table['Avg Test Accuracy Std'] = np.nanmean(arousal_mlp_table['Test Accuracy Std'])
 arousal_mlp_table['Max Test Score'] = max(arousal_mlp_table['Test Accuracy'])
 arousal_mlp_table['Min Test Score'] = min(arousal_mlp_table['Test Accuracy'])
-arousal_mlp_table['Avg F1 Test Score'] = np.mean(arousal_mlp_table['Test F1 Score'])
-arousal_mlp_table['Avg Train Score'] = np.mean(arousal_mlp_table['Train Mean Score'])
+arousal_mlp_table['Avg F1 Test Score'] = np.nanmean(arousal_mlp_table['Test F1 Score'])
+arousal_mlp_table['Avg Train Score'] = np.nanmean(arousal_mlp_table['Train Mean Score'])
 arousal_mlp_table['Max Train Score'] = max(arousal_mlp_table['Train Mean Score'])
 arousal_mlp_table['Min Train Score'] = min(arousal_mlp_table['Train Mean Score'])
-arousal_mlp_table['Avg Train Std'] = np.mean(arousal_mlp_table['Train Std'])
-arousal_mlp_table['Avg Chance Level'] = np.mean(arousal_mlp_table['Chance Level'])
-arousal_mlp_table['Avg MCC Test'] = np.mean(arousal_mlp_table['Test MCC'])
+arousal_mlp_table['Avg Train Std'] = np.nanmean(arousal_mlp_table['Train Std'])
+arousal_mlp_table['Avg Chance Level'] = np.nanmean(arousal_mlp_table['Chance Level'])
+arousal_mlp_table['Avg Chance Level Std'] = np.nanstd(arousal_mlp_table['Chance Level'])
+arousal_mlp_table['Avg MCC'] = np.nanmean(arousal_mlp_table['MCC'])
+arousal_mlp_table['Avg MCC Std'] = np.nanstd(arousal_mlp_table['MCC'])
+arousal_mlp_table['Avg CV MCC'] = np.nanmean(arousal_mlp_table['CV MCC'])
+arousal_mlp_table['Avg CV MCC Std'] = np.nanstd(arousal_mlp_table['CV MCC'])
 
-valence_mlp_table['Avg Test Score'] = np.mean(valence_mlp_table['Test Accuracy'])
+valence_mlp_table['Avg Test Accuracy'] = np.nanmean(valence_mlp_table['Test Accuracy'])
+valence_mlp_table['Avg Test Accuracy Std'] = np.nanmean(valence_mlp_table['Test Accuracy Std'])
 valence_mlp_table['Max Test Score'] = max(valence_mlp_table['Test Accuracy'])
 valence_mlp_table['Min Test Score'] = min(valence_mlp_table['Test Accuracy'])
-valence_mlp_table['Avg F1 Test Score'] = np.mean(valence_mlp_table['Test F1 Score'])
-valence_mlp_table['Avg Train Score'] = np.mean(valence_mlp_table['Train Mean Score'])
+valence_mlp_table['Avg F1 Test Score'] = np.nanmean(valence_mlp_table['Test F1 Score'])
+valence_mlp_table['Avg Train Score'] = np.nanmean(valence_mlp_table['Train Mean Score'])
 valence_mlp_table['Max Train Score'] = max(valence_mlp_table['Train Mean Score'])
 valence_mlp_table['Min Train Score'] = min(valence_mlp_table['Train Mean Score'])
-valence_mlp_table['Avg Train Std'] = np.mean(valence_mlp_table['Train Std'])
-valence_mlp_table['Avg Chance Level'] = np.mean(valence_mlp_table['Chance Level'])
-valence_mlp_table['Avg MCC Test'] = np.mean(valence_mlp_table['Test MCC'])
-
+valence_mlp_table['Avg Train Std'] = np.nanmean(valence_mlp_table['Train Std'])
+valence_mlp_table['Avg Chance Level'] = np.nanmean(valence_mlp_table['Chance Level'])
+valence_mlp_table['Avg Chance Level Std'] = np.nanstd(valence_mlp_table['Chance Level'])
+valence_mlp_table['Avg MCC'] = np.nanmean(valence_mlp_table['MCC'])
+valence_mlp_table['Avg MCC Std'] = np.nanmean(valence_mlp_table['MCC'])
+valence_mlp_table['Avg CV MCC'] = np.nanmean(valence_mlp_table['CV MCC'])
+valence_mlp_table['Avg CV MCC Std'] = np.nanmean(valence_mlp_table['CV MCC'])
 
 folder = 'PCA'
 sort_criterion = 'Mean'
